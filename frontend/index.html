@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSA Digital Signature Demo — BMS College of Engineering</title>
+  <meta name="description" content="RSA Digital Signature demonstration implementing authenticity, integrity, and non-repudiation using C++ crypto engine. BMS College of Engineering AAT project.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="brand-icon">🔐</div>
+        <div>
+          <h1>Secure Document Integrity Verification</h1>
+          <p class="subtitle">RSA Digital Signatures &mdash; Implemented from Scratch &nbsp;|&nbsp; No Cryptographic Libraries Used</p>
+        </div>
+      </div>
+      <nav>
+        <button id="nav-home"   onclick="showSection('home')"   class="nav-btn active">Home</button>
+        <button id="nav-keygen" onclick="showSection('keygen')" class="nav-btn">1. Key Generation</button>
+        <button id="nav-sign"   onclick="showSection('sign')"   class="nav-btn">2. Sign Document</button>
+        <button id="nav-verify" onclick="showSection('verify')" class="nav-btn">3. Verify</button>
+        <button id="nav-tamper" onclick="showSection('tamper')" class="nav-btn">4. Tamper Demo</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ===== SECTION: Home ===== -->
+    <section id="home" class="active">
+      <div class="section-header">
+        <h2>What This System Demonstrates</h2>
+        <span class="section-badge">RSA Digital Signatures</span>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <span class="card-icon">✅</span>
+          <h3>Authenticity</h3>
+          <p>Proves who signed the document using their private key — only the key owner could have created that signature</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🔒</span>
+          <h3>Integrity</h3>
+          <p>Detects any modification — even a single character change produces a completely different hash value</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">📜</span>
+          <h3>Non-Repudiation</h3>
+          <p>Signer cannot deny having signed the document — the private key is the irrefutable proof of origin</p>
+        </div>
+      </div>
+
+      <div class="workflow-box">
+        <h3>System Workflow</h3>
+        <div class="workflow">
+          <div class="wf-step">📄 Document</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step">🔢 Custom Hash</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step">🗝️ Sign with Private Key</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step">🔑 Verify with Public Key</div>
+          <div class="wf-arrow">→</div>
+          <div class="wf-step result">✅ Valid &nbsp;/&nbsp; ❌ Tampered</div>
+        </div>
+        <div class="math-row">
+          <div class="math-block">
+            <span class="math-label">Signing</span>
+            <code>σ = H(m)<sup>d</sup> mod n</code>
+          </div>
+          <div class="math-block">
+            <span class="math-label">Verification</span>
+            <code>σ<sup>e</sup> mod n == H(m)</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="tech-stack">
+        <h3>Implementation Stack</h3>
+        <div class="tech-grid">
+          <div class="tech-item">
+            <span class="tech-icon">⚙️</span>
+            <div>
+              <strong>C++ Crypto Engine</strong>
+              <p>All math: modPow, modInverse, hash — zero libraries</p>
+            </div>
+          </div>
+          <div class="tech-item">
+            <span class="tech-icon">🐍</span>
+            <div>
+              <strong>Python Flask</strong>
+              <p>REST API server — calls C++ binary via subprocess</p>
+            </div>
+          </div>
+          <div class="tech-item">
+            <span class="tech-icon">🌐</span>
+            <div>
+              <strong>HTML / CSS / JS</strong>
+              <p>Pure frontend — no frameworks, no npm packages</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="applications">
+        <h3>Real World Applications</h3>
+        <div class="app-grid">
+          <div class="app-item"><span>🏦</span><div><strong>Banking</strong><p>Transaction authorization and integrity verification</p></div></div>
+          <div class="app-item"><span>🖥️</span><div><strong>Software Signing</strong><p>Verifying OS and app updates (Windows Update, App Stores)</p></div></div>
+          <div class="app-item"><span>🔏</span><div><strong>SSL/TLS</strong><p>Certificates for secure HTTPS web communication</p></div></div>
+          <div class="app-item"><span>📧</span><div><strong>Email Signing</strong><p>PGP and S/MIME cryptographic email protocols</p></div></div>
+        </div>
+      </div>
+
+      <div class="start-cta">
+        <p>Begin the demonstration with Step 1 →</p>
+        <button class="btn-primary" onclick="showSection('keygen')">Start Demo: Generate Keys</button>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: Key Generation ===== -->
+    <section id="keygen">
+      <div class="section-header">
+        <h2>Step 1 — RSA Key Generation</h2>
+        <span class="section-badge step-badge">Key Generation</span>
+      </div>
+
+      <div class="info-box">
+        <div class="info-icon">ℹ️</div>
+        <div>
+          <p>Generates a key pair using two prime numbers <strong>p = 61</strong> and <strong>q = 53</strong>.</p>
+          <p style="margin-top:6px">Computes: <code>n = p × q = 3233</code> &nbsp;|&nbsp; <code>φ(n) = (p−1)(q−1) = 3120</code> &nbsp;|&nbsp; <code>e = 17</code> &nbsp;|&nbsp; <code>d = e⁻¹ mod φ(n)</code> via Extended Euclidean Algorithm</p>
+        </div>
+      </div>
+
+      <div class="algo-steps">
+        <div class="algo-step"><span class="step-num">1</span> Select primes: <code>p = 61, q = 53</code></div>
+        <div class="algo-step"><span class="step-num">2</span> Compute modulus: <code>n = p × q = 3233</code></div>
+        <div class="algo-step"><span class="step-num">3</span> Euler's totient: <code>φ(n) = (p−1)(q−1) = 3120</code></div>
+        <div class="algo-step"><span class="step-num">4</span> Choose public exponent: <code>e = 17</code> where <code>gcd(e, φ) = 1</code></div>
+        <div class="algo-step"><span class="step-num">5</span> Compute private key: <code>d = e⁻¹ mod φ(n)</code> (Extended Euclidean)</div>
+      </div>
+
+      <button class="btn-primary" id="btn-keygen" onclick="generateKeys()">
+        <span class="btn-icon">⚡</span> Generate RSA Key Pair
+      </button>
+
+      <div id="key-output" class="output-box hidden">
+        <div class="output-title">Key Pair Generated</div>
+        <div class="key-display">
+          <div class="key-card public">
+            <div class="key-card-header">
+              <span class="key-card-icon">🔑</span>
+              <h3>Public Key</h3>
+            </div>
+            <p class="key-usage">Share freely &mdash; used for verification</p>
+            <div class="key-value">(e, n) = (<span id="pub-e" class="key-num"></span>, <span id="pub-n" class="key-num"></span>)</div>
+          </div>
+          <div class="key-card private">
+            <div class="key-card-header">
+              <span class="key-card-icon">🗝️</span>
+              <h3>Private Key</h3>
+            </div>
+            <p class="key-usage">Keep secret &mdash; used for signing</p>
+            <div class="key-value">(d, n) = (<span id="priv-d" class="key-num"></span>, <span id="priv-n" class="key-num"></span>)</div>
+          </div>
+        </div>
+        <div class="next-hint">
+          Keys generated successfully. Proceed to Step 2 →
+          <button class="btn-next" onclick="showSection('sign')">Sign Document →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: Sign ===== -->
+    <section id="sign">
+      <div class="section-header">
+        <h2>Step 2 — Sign a Document</h2>
+        <span class="section-badge step-badge">Signing</span>
+      </div>
+
+      <div class="info-box">
+        <div class="info-icon">ℹ️</div>
+        <div>
+          <p>Hash the document using a custom polynomial rolling hash, then encrypt the hash with the private key.</p>
+          <p style="margin-top:6px"><code>σ = H(message)<sup>d</sup> mod n</code> &nbsp;&mdash;&nbsp; Square-and-Multiply modular exponentiation</p>
+        </div>
+      </div>
+
+      <div id="key-status-sign" class="key-status-bar">
+        <span id="key-status-sign-icon">⚠️</span>
+        <span id="key-status-sign-text">No keys loaded. Please generate keys first.</span>
+        <button class="btn-small" onclick="showSection('keygen')">Go to Key Generation</button>
+      </div>
+
+      <label for="doc-input">Enter Document to Sign:</label>
+      <textarea id="doc-input" placeholder="e.g. Transfer Rs. 5000 to Account X" rows="3"></textarea>
+
+      <button class="btn-primary" id="btn-sign" onclick="signDoc()">
+        <span class="btn-icon">✍️</span> Generate Signature
+      </button>
+
+      <div id="sign-output" class="output-box hidden">
+        <div class="output-title">Signing Complete</div>
+        <table class="result-table">
+          <tr>
+            <td class="result-label">📄 Document Hash</td>
+            <td><span id="hash-val" class="mono"></span><span class="mono-note">H(message) mod n</span></td>
+          </tr>
+          <tr>
+            <td class="result-label">✍️ RSA Signature</td>
+            <td><span id="sig-val" class="mono mono-sig"></span><span class="mono-note">H(m)<sup>d</sup> mod n</span></td>
+          </tr>
+        </table>
+        <div class="next-hint">
+          Document signed. Proceed to Step 3 to verify →
+          <button class="btn-next" onclick="showSection('verify')">Verify Signature →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SECTION: Verify ===== -->
+    <section id="verify">
+      <div class="section-header">
+        <h2>Step 3 — Verify Document Authenticity</h2>
+        <span class="section-badge step-badge">Verification</span>
+      </div>
+
+      <div class="info-box">
+        <div class="info-icon">ℹ️</div>
+        <div>
+          <p>Recover the hash from signature using the public key, then compare with recomputed hash.</p>
+          <p style="margin-top:6px">If <code>σ<sup>e</sup> mod n == H(message)</code> → <strong>VALID</strong> &nbsp;|&nbsp; else → <strong>TAMPERED</strong></p>
+        </div>
+      </div>
+
+      <label for="verify-doc">Document:</label>
+      <textarea id="verify-doc" placeholder="Paste or type the document to verify" rows="3"></textarea>
+
+      <label for="verify-sig">Signature:</label>
+      <input type="text" id="verify-sig" placeholder="Enter signature value">
+
+      <button class="btn-primary" onclick="verifyDoc()">
+        <span class="btn-icon">🔍</span> Verify Signature
+      </button>
+
+      <div id="verify-result" class="output-box hidden"></div>
+    </section>
+
+    <!-- ===== SECTION: Tamper Demo ===== -->
+    <section id="tamper">
+      <div class="section-header">
+        <h2>Step 4 — Tampering Detection Demo</h2>
+        <span class="section-badge step-badge danger-badge">Live Demo</span>
+      </div>
+
+      <div class="info-box">
+        <div class="info-icon">⚡</div>
+        <div>
+          <p><strong>The showstopper moment.</strong> The original document is signed with a private key. We modify the document (Rs. 5000 → Rs. 50000) and attempt verification with the <em>same</em> signature. Verification must fail — proving RSA integrity protection works.</p>
+        </div>
+      </div>
+
+      <div id="tamper-key-status" class="key-status-bar">
+        <span>⚠️</span>
+        <span>Please sign a document in Step 2 first to get a live signature to test with.</span>
+        <button class="btn-small" onclick="showSection('sign')">Go to Sign</button>
+      </div>
+
+      <div class="tamper-grid">
+        <div class="tamper-panel original">
+          <div class="tamper-panel-header">
+            <span class="panel-icon">📄</span>
+            <h3>Original Document</h3>
+          </div>
+          <div class="doc-display" id="tamper-original-doc">Transfer Rs. 5000 to Account X</div>
+          <div class="status valid">✅ SIGNATURE VALID</div>
+          <p class="note">Signed with private key. Hash matches perfectly.</p>
+        </div>
+
+        <div class="tamper-panel modified">
+          <div class="tamper-panel-header">
+            <span class="panel-icon">✏️</span>
+            <h3>Tampered Document</h3>
+          </div>
+          <input type="text" id="tamper-doc" value="Transfer Rs. 50000 to Account X" class="tamper-input">
+          <p class="note">Same signature used, but document is altered. Hash will not match.</p>
+          <button class="btn-danger" onclick="runTamperDemo()">
+            <span class="btn-icon">💥</span> Run Tamper Detection
+          </button>
+          <div id="tamper-result" class="hidden tamper-result-box"></div>
+        </div>
+      </div>
+
+      <div class="tamper-explanation hidden" id="tamper-explanation">
+        <div class="explain-header">
+          <span>🔬</span>
+          <h3>Why Verification Failed — The Science</h3>
+        </div>
+        <div class="explain-body">
+          <div class="explain-step">
+            <div class="explain-num">1</div>
+            <p>The signature was computed as <code>σ = H(original)<sup>d</sup> mod n</code> using the original document's hash.</p>
+          </div>
+          <div class="explain-step">
+            <div class="explain-num">2</div>
+            <p>Verification recovers: <code>σ<sup>e</sup> mod n</code> → this gives back <code>H(original)</code>.</p>
+          </div>
+          <div class="explain-step">
+            <div class="explain-num">3</div>
+            <p>But we now compute <code>H(tampered)</code> — a completely different value due to the changed content.</p>
+          </div>
+          <div class="explain-step">
+            <div class="explain-num">4</div>
+            <p><strong>H(original) ≠ H(tampered)</strong> → Verification FAILS. This is RSA digital signature integrity in action.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">🔐 RSA Digital Signature Demonstration</div>
+      <div class="footer-info">BMS College of Engineering, Bangalore &nbsp;|&nbsp; AAT Project — Cryptography &amp; Network Security</div>
+      <div class="footer-tech">All cryptographic operations implemented in C++ from scratch &mdash; No external libraries used</div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
