@@ -1,4 +1,4 @@
-# CRPAAT: RSA Digital Signature System
+# CRP_AAT: RSA Digital Signature System
 
 ## Project Overview
 This project is a complete, educational demonstration of an RSA Digital Signature system built from scratch. Designed for a college cybersecurity assignment (CRPAAT), the objective is to illustrate the end-to-end workflow of digital signatures—including key generation, document signing, signature verification, and tamper detection—without relying on external cryptographic libraries for the core mathematical operations.
