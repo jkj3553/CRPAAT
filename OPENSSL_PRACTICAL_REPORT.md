@@ -184,15 +184,9 @@ openssl genrsa -out private.pem 2048
 - `-out private.pem` — Specifies the output file. `.pem` stands for Privacy Enhanced Mail, a Base64-encoded format for storing cryptographic objects. This is the standard container format for keys and certificates.
 - `2048` — Specifies the key size in bits. This means OpenSSL will find two prime numbers, each approximately 1024 bits long, and multiply them to produce a 2048-bit modulus `n`. This key size is the current minimum recommended by NIST (National Institute of Standards and Technology) for RSA in production systems.
 
-The terminal will print something like:
-```
-Generating RSA private key, 2048 bit long modulus (2 prime factors)
-...+++
-..............+++
-e is 65537 (0x10001)
-```
+*Note on Output:* In older versions of OpenSSL (like 1.1.1), this command would print a visual progress indicator (a series of `.` and `+` symbols). However, in modern OpenSSL versions (3.0 and newer), **this command runs silently and prints nothing to the terminal** on success. It simply creates the `private.pem` file in the background.
 
-Notice that OpenSSL chose `e = 65537`. This is the standard choice for the public exponent because it is prime (so `gcd(e, φ(n)) = 1` is almost always satisfied), it is small (making public-key operations fast), and its binary representation `10000000000000001` has only two `1` bits, which means the square-and-multiply exponentiation algorithm (identical to `modPow()` in the project's `backend/mod_arith.cpp`) requires minimal multiplications.
+While the output is silent, OpenSSL internally defaults to choosing `e = 65537` for the public exponent. This is the standard choice because it is prime (so `gcd(e, φ(n)) = 1` is almost always satisfied), it is small (making public-key operations fast), and its binary representation `10000000000000001` has only two `1` bits, which means the square-and-multiply exponentiation algorithm (identical to `modPow()` in the project's `backend/mod_arith.cpp`) requires minimal multiplications.
 
 > **Private Key Security Note:** The `private.pem` file contains everything: the prime factors `p` and `q`, the modulus `n`, both exponents `e` and `d`, and the CRT parameters. Anyone who obtains this file can sign documents in your name. In production environments, this file would be stored in an HSM (Hardware Security Module) or protected with a passphrase using `-aes256`.
 
