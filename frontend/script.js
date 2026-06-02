@@ -103,7 +103,9 @@ async function generateKeypair() {
     document.getElementById('pub-fingerprint').textContent = data.fingerprint;
     document.getElementById('keygen-result').classList.remove('hidden');
     btn.innerHTML = '<span class="btn-icon">✅</span> Keys Generated';
-    btn.style.background = 'linear-gradient(135deg, #00aa44, #007733)';
+    btn.style.background = 'none';
+    btn.style.borderColor = 'var(--emerald)';
+    btn.style.color = 'var(--emerald)';
 
     const pill = document.querySelector('.key-status-pill');
     pill.classList.add('ready');
@@ -161,7 +163,9 @@ async function uploadDocument() {
     }, 800);
 
     btn.innerHTML = '<span>✅</span> Uploaded';
-    btn.style.background = 'linear-gradient(135deg,#00aa44,#007733)';
+    btn.style.background = 'none';
+    btn.style.borderColor = 'var(--emerald)';
+    btn.style.color = 'var(--emerald)';
   } catch (err) {
     btn.style.pointerEvents = 'auto';
     btn.innerHTML = '<span>📂</span> Upload Document';
@@ -201,7 +205,9 @@ async function signDocument() {
     setBtn('btn-transmit', true);
 
     btn.innerHTML = '<span>✅</span> Signed';
-    btn.style.background = 'linear-gradient(135deg,#00aa44,#007733)';
+    btn.style.background = 'none';
+    btn.style.borderColor = 'var(--emerald)';
+    btn.style.color = 'var(--emerald)';
   } catch (err) {
     btn.disabled = false;
     btn.innerHTML = '<span>✍️</span> Sign Document';
@@ -240,7 +246,9 @@ async function transmitDocument() {
     setBtn('btn-verify', true);
 
     btn.innerHTML = '<span>✅</span> Transmitted';
-    btn.style.background = 'linear-gradient(135deg,#00aa44,#007733)';
+    btn.style.background = 'none';
+    btn.style.borderColor = 'var(--emerald)';
+    btn.style.color = 'var(--emerald)';
   } catch (err) {
     btn.disabled = false;
     btn.innerHTML = '<span>📡</span> Transmit';
@@ -317,7 +325,9 @@ async function submitTamperPayload() {
     setBtn('btn-verify', true);
 
     btn.innerHTML = '<span>✅</span> Modified';
-    btn.style.background = 'linear-gradient(135deg,#aa0000,#770000)';
+    btn.style.background = 'none';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
     btn.disabled = false; // Allow modifying it again!
   } catch (err) {
     btn.disabled = false;
@@ -400,9 +410,9 @@ async function verifyDocument() {
     // Keep the Verify button enabled and accessible for repetitive testing
     btn.disabled = false;
     btn.innerHTML = '<span>🔍</span> Verify Signature';
-    btn.style.background = data.isValid
-      ? 'linear-gradient(135deg,#00aa44,#007733)'
-      : 'linear-gradient(135deg,var(--red),#aa1111)';
+    btn.style.background = 'none';
+    btn.style.borderColor = data.isValid ? 'var(--emerald)' : 'var(--red)';
+    btn.style.color = data.isValid ? 'var(--emerald)' : 'var(--red)';
   } catch (err) {
     btn.disabled = false;
     btn.innerHTML = '<span>🔍</span> Verify Signature';
@@ -471,4 +481,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-

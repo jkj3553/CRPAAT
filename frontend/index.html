@@ -3,296 +3,363 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Digital Signature Integrity Verification | CRPAAT</title>
-  <meta name="description" content="Enterprise cybersecurity visualization platform demonstrating how RSA digital signatures protect document integrity." />
+  <title>CYPHR_CORE // Cryptographic Verification Workspace</title>
+  <meta name="description" content="Minimalist dark cyberpunk visualization platform demonstrating how digital signatures protect document integrity." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- ═══════════════ HEADER ═══════════════ -->
-<header>
-  <div class="header-inner">
-    <div class="header-brand">
-      <span class="brand-icon">🛡️</span>
-      <div>
-        <h1>Digital Signature Integrity Platform</h1>
-        <p class="subtitle">RSA-2048 · SHA-256 · OpenSSL — Enterprise Cryptographic Visualization</p>
-      </div>
-      <div class="key-status-pill" id="key-pill">
-        <span class="pill-dot"></span>
-        <span id="key-pill-text">Keys not generated</span>
-      </div>
-    </div>
-  </div>
-</header>
+<div class="app-wrapper">
 
-<!-- ═══════════════ MAIN ═══════════════ -->
-<main>
 
-  <!-- ── INIT PANEL ── -->
-  <section class="init-panel" id="init-panel">
-    <div class="init-inner">
-      <div class="init-icon">🔑</div>
-      <h2>Initialize Cryptographic Environment</h2>
-      <p>Generate a fresh RSA-2048 key pair using OpenSSL before the demonstration begins.<br/>The private key signs documents. The public key verifies them.</p>
-      <div class="key-spec-row">
-        <span class="key-spec-tag">RSA-2048</span>
-        <span class="key-spec-tag">SHA-256</span>
-        <span class="key-spec-tag">PKCS#1 v1.5</span>
-        <span class="key-spec-tag">OpenSSL 3.x</span>
+
+  <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+  <div class="workspace-container">
+    <main class="main-content">
+
+      <!-- KEY STATUS PILL (top-right) -->
+      <div class="key-pill-topbar">
+        <div class="key-status-pill" id="key-pill">
+          <span class="pill-dot"></span>
+          <span id="key-pill-text">Keys not generated</span>
+        </div>
       </div>
-      <button class="btn-primary" id="btn-keygen" onclick="generateKeypair()">
-        <span class="btn-icon">⚡</span> Generate RSA-2048 Key Pair
-      </button>
-      <div id="keygen-result" class="keygen-result hidden">
-        <div class="key-info-row">
-          <div class="key-info-card public-card">
-            <div class="kic-icon">🔓</div>
-            <div class="kic-label">Public Key</div>
-            <div class="kic-status">Generated</div>
-            <div class="kic-detail" id="pub-fingerprint">—</div>
+
+      <!-- ── INIT PANEL ── -->
+      <section class="init-panel" id="init-panel">
+        <div class="init-inner">
+          <h2>Initialize Cryptographic Environment</h2>
+          <p>Generate a fresh RSA-2048 key pair using OpenSSL before the demonstration begins. The private key signs documents. The public key verifies them.</p>
+          
+          <div class="key-spec-row">
+            <span class="key-spec-tag">RSA-2048</span>
+            <span class="key-spec-tag">SHA-256</span>
+            <span class="key-spec-tag">PKCS#1 v1.5</span>
+            <span class="key-spec-tag">OpenSSL 3.x</span>
           </div>
-          <div class="key-info-card private-card">
-            <div class="kic-icon">🔐</div>
-            <div class="kic-label">Private Key</div>
-            <div class="kic-status">Secured</div>
-            <div class="kic-detail">2048-bit · Server-side only</div>
+
+          <button class="btn-primary" id="btn-keygen" onclick="generateKeypair()">
+            <span>⚡</span> Generate RSA-2048 Key Pair
+          </button>
+
+          <div id="keygen-result" class="keygen-result hidden">
+            <div class="key-info-row">
+              <div class="key-info-card public-card">
+                <div class="kic-label">Public Key</div>
+                <div class="kic-status">Generated</div>
+                <div class="kic-detail" id="pub-fingerprint">—</div>
+              </div>
+              <div class="key-info-card private-card">
+                <div class="kic-label">Private Key</div>
+                <div class="kic-status">Secured</div>
+                <div class="kic-detail">2048-bit · Server-side only</div>
+              </div>
+            </div>
+            <p class="init-ready">✓ Environment ready — Upload a document to begin</p>
           </div>
         </div>
-        <p class="init-ready">✅ Environment ready — Upload a document to begin</p>
+      </section>
+
+      <!-- Channel label above the layout -->
+      <div class="channel-label-bar">
+        <span class="channel-label-text">⇄ Encrypted Communication Channel</span>
       </div>
-    </div>
-  </section>
 
-  <!-- ══════════════════════════════════════════════════════════
-       ROW 1 — Alice | Pipeline | Bob
-  ══════════════════════════════════════════════════════════ -->
-  <section class="comm-layout" id="actors-grid">
+      <!-- ══════════════════════════════════════════════════════════
+           ROW 1 — Alice | Pipeline | Bob
+      ══════════════════════════════════════════════════════════ -->
+      <section class="comm-layout" id="actors-grid">
 
-    <!-- ALICE ───────────────────────────── -->
-    <div class="actor-card alice-card" id="alice-card">
-      <div class="actor-header">
-        <div class="actor-avatar alice-avatar">A</div>
-        <div>
-          <div class="actor-name">Alice</div>
-          <div class="actor-role">Document Signer</div>
+        <!-- ALICE (SENDER) -->
+        <div class="actor-card alice-card" id="alice-card">
+          <div class="actor-header">
+            <div class="avatar-square">A</div>
+            <div class="actor-meta">
+              <div class="actor-name">Alice</div>
+              <div class="actor-desc">Document Signer (Sender)</div>
+            </div>
+            <div class="actor-badge">SENDER_NODE</div>
+          </div>
+
+          <!-- Dash border status box containers -->
+          <div class="icon-box-row">
+            <div class="icon-box" id="alice-doc-box">
+              <div class="ib-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <div class="ib-label">DOCUMENT</div>
+              <div class="ib-status si-idle" id="alice-doc-state">NO_FILE_LOADED</div>
+            </div>
+            <div class="icon-box ib--idle" id="alice-sig-box">
+              <div class="ib-icon" id="alice-sig-icon">#️⃣</div>
+              <div class="ib-label">HASH / SIGNATURE</div>
+              <div class="ib-status" id="alice-sig-state">UNSIGNED</div>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="btn-row-2">
+            <label class="btn-actor btn-upload" id="btn-upload-label" for="file-input">
+              Upload Document
+            </label>
+            <input type="file" id="file-input" accept=".txt" onchange="onFileSelect(event)" />
+            <button class="btn-actor btn-sign" id="btn-sign" onclick="signDocument()" disabled>
+              Sign Document
+            </button>
+          </div>
+
+          <!-- Transmit button -->
+          <button class="btn-actor btn-transmit btn-full" id="btn-transmit" onclick="transmitDocument()" disabled>
+            Transmit Document
+          </button>
         </div>
-        <div class="actor-badge">SENDER</div>
-      </div>
 
-      <!-- Icon boxes -->
-      <div class="icon-box-row">
-        <div class="icon-box" id="alice-doc-box">
-          <div class="ib-icon">📄</div>
-          <div class="ib-label">DOCUMENT</div>
-          <div class="ib-status si-idle" id="alice-doc-state">No file</div>
+        <!-- PIPELINE GAP CONNECTOR -->
+        <div class="pipeline-column">
+          <div class="pipeline-track">
+            <svg class="pipeline-svg" id="pipeline-svg" viewBox="0 0 300 24" preserveAspectRatio="none">
+              <line id="pipe-line" x1="0" y1="12" x2="300" y2="12"
+                    stroke="var(--pipe-color,#1b2028)" stroke-width="2"
+                    stroke-dasharray="6 6" />
+              <circle id="pipe-packet" cx="-20" cy="12" r="5"
+                      fill="var(--pipe-color,#1b2028)" opacity="0" />
+            </svg>
+            
+            <!-- Midpoint action icon box in mockup -->
+            <div class="pipeline-node" id="pipeline-node">
+              <span id="pipeline-node-icon">⇄</span>
+            </div>
+          </div>
+
+          <!-- Connector going down to MitM Adversary -->
+          <div class="pipeline-down-connector" id="pipe-down-conn"></div>
         </div>
-        <div class="icon-box ib--idle" id="alice-sig-box">
-          <div class="ib-icon" id="alice-sig-icon">#️⃣</div>
-          <div class="ib-label">HASH / SIGNATURE</div>
-          <div class="ib-status" id="alice-sig-state">Unsigned</div>
+
+        <!-- BOB (RECEIVER) -->
+        <div class="actor-card bob-card" id="bob-card">
+          <div class="actor-header">
+            <div class="avatar-square">B</div>
+            <div class="actor-meta">
+              <div class="actor-name">Bob</div>
+              <div class="actor-desc">Document Recipient (Receiver)</div>
+            </div>
+            <div class="actor-badge">RECEIVER_NODE</div>
+          </div>
+
+          <!-- Dash border status box containers -->
+          <div class="icon-box-row">
+            <div class="icon-box" id="bob-doc-box">
+              <div class="ib-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <div class="ib-label">DOCUMENT</div>
+              <div class="ib-status si-idle" id="bob-doc-state">AWAITING...</div>
+            </div>
+            <div class="icon-box" id="bob-sig-box">
+              <div class="ib-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </div>
+              <div class="ib-label">SIGNATURE</div>
+              <div class="ib-status si-idle" id="bob-sig-state">AWAITING...</div>
+            </div>
+          </div>
+
+          <!-- Verify button -->
+          <button class="btn-actor btn-verify btn-full" id="btn-verify" onclick="verifyDocument()" disabled>
+            Verify Signature
+          </button>
+
+          <!-- Verdict dynamic banner placeholder -->
+          <div class="bob-result hidden" id="bob-result">
+            <div class="verdict-banner" id="verdict-banner">—</div>
+          </div>
         </div>
-      </div>
 
-      <!-- Primary buttons row -->
-      <div class="btn-row-2">
-        <label class="btn-actor btn-upload" id="btn-upload-label" for="file-input">
-          <span>📂</span> Upload Document
-        </label>
-        <input type="file" id="file-input" accept=".txt" onchange="onFileSelect(event)" />
-        <button class="btn-actor btn-sign" id="btn-sign" onclick="signDocument()" disabled>
-          <span>✍️</span> Sign Document
-        </button>
-      </div>
+      </section>
 
-      <!-- Transmit button -->
-      <button class="btn-actor btn-transmit btn-full" id="btn-transmit" onclick="transmitDocument()" disabled>
-        <span>📡</span> Transmit →
-      </button>
-    </div>
+      <!-- ══════════════════════════════════════════════════════════
+           ROW 2 — Adversary (Centered)
+      ══════════════════════════════════════════════════════════ -->
+      <div class="adversary-row">
+        <div class="adversary-up-arrow" id="adv-up-arrow">↑</div>
+        <div class="actor-card adversary-card" id="adversary-card">
+          
+          <div class="adversary-card-header">
+            <div class="adv-left-block">
+              <!-- Warning icon badge -->
+              <div class="adv-warning-badge">⚠️</div>
+              <div class="adv-meta">
+                <div class="adv-name">Adversary: Man-in-the-Middle</div>
+                <div class="adv-status-code" id="tsb-text">INTERCEPT_ACTIVE_PENDING_TRANSMISSION</div>
+              </div>
+            </div>
+            <button class="btn-actor btn-modify" id="btn-modify" onclick="modifyDocument()" disabled>
+              Modify Document
+            </button>
+          </div>
 
-    <!-- PIPELINE ─────────────────────────── -->
-    <div class="pipeline-column">
-      <!-- Top channel label -->
-      <div class="pipeline-label">Encrypted Communication Channel</div>
+          <!-- Hidden tamper indicators / status code box -->
+          <div class="tamper-status-box hidden" id="tamper-status-box">
+            <span id="adv-dot" class="adv-threat-dot"></span>
+            <span class="tsb-text-alert">TAMPERING ACTIVE</span>
+          </div>
 
-      <!-- The line itself with midpoint node -->
-      <div class="pipeline-track">
-        <svg class="pipeline-svg" id="pipeline-svg" viewBox="0 0 300 24" preserveAspectRatio="none">
-          <line id="pipe-line" x1="0" y1="12" x2="300" y2="12"
-                stroke="var(--pipe-color,#2a3f50)" stroke-width="2.5"
-                stroke-dasharray="8 6" />
-          <!-- animated packet -->
-          <circle id="pipe-packet" cx="-20" cy="12" r="6"
-                  fill="var(--pipe-color,#2a3f50)" opacity="0" />
-        </svg>
-        <!-- midpoint node -->
-        <div class="pipeline-node" id="pipeline-node">
-          <span id="pipeline-node-icon"></span>
-        </div>
-      </div>
+          <!-- Live diff review -->
+          <div class="tamper-diff hidden" id="tamper-diff">
+            <div class="diff-row">
+              <span class="diff-label original-label">Original</span>
+              <code class="diff-value" id="diff-original">—</code>
+            </div>
+            <div class="diff-row">
+              <span class="diff-label tampered-label">Tampered</span>
+              <code class="diff-value diff-red" id="diff-tampered">—</code>
+            </div>
+          </div>
 
-      <!-- Downward connector to adversary -->
-      <div class="pipeline-down-connector" id="pipe-down-conn"></div>
-    </div>
-
-    <!-- BOB ─────────────────────────────── -->
-    <div class="actor-card bob-card" id="bob-card">
-      <div class="actor-header">
-        <div class="actor-avatar bob-avatar">B</div>
-        <div>
-          <div class="actor-name">Bob</div>
-          <div class="actor-role">Document Recipient</div>
-        </div>
-        <div class="actor-badge">RECEIVER</div>
-      </div>
-
-      <!-- Icon boxes -->
-      <div class="icon-box-row">
-        <div class="icon-box" id="bob-doc-box">
-          <div class="ib-icon">📄</div>
-          <div class="ib-label">DOCUMENT</div>
-          <div class="ib-status si-idle" id="bob-doc-state">Awaiting</div>
-        </div>
-        <div class="icon-box" id="bob-sig-box">
-          <div class="ib-icon">🔏</div>
-          <div class="ib-label">SIGNATURE</div>
-          <div class="ib-status si-idle" id="bob-sig-state">Awaiting</div>
-        </div>
-      </div>
-
-      <!-- Verify button -->
-      <button class="btn-actor btn-verify btn-full" id="btn-verify" onclick="verifyDocument()" disabled>
-        <span>🔍</span> Verify Signature
-      </button>
-
-      <!-- Bob verdict -->
-      <div class="bob-result hidden" id="bob-result">
-        <div class="verdict-banner" id="verdict-banner">—</div>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════
-       ROW 2 — Adversary (centered below pipeline)
-  ══════════════════════════════════════════════════════════ -->
-  <div class="adversary-row">
-    <div class="adversary-up-arrow" id="adv-up-arrow">↑</div>
-    <div class="actor-card adversary-card" id="adversary-card">
-      <div class="actor-header">
-        <div class="actor-avatar adv-avatar">⚠</div>
-        <div>
-          <div class="actor-name">Adversary</div>
-          <div class="actor-role">Man-in-the-Middle</div>
-        </div>
-        <div class="adv-threat-dot" id="adv-dot" title="Threat inactive"></div>
-      </div>
-
-      <div class="tamper-status-box" id="tamper-status-box">
-        <span class="tsb-icon">🛡️</span>
-        <span id="tsb-text">Channel secure — no tampering detected</span>
-      </div>
-
-      <button class="btn-actor btn-modify btn-full" id="btn-modify" onclick="modifyDocument()" disabled>
-        <span>✂️</span> Modify Document
-      </button>
-
-      <div class="tamper-diff hidden" id="tamper-diff">
-        <div class="diff-row">
-          <span class="diff-label original-label">Original</span>
-          <code class="diff-value" id="diff-original">—</code>
-        </div>
-        <div class="diff-row">
-          <span class="diff-label tampered-label">Tampered</span>
-          <code class="diff-value diff-red" id="diff-tampered">—</code>
+          <!-- Secure status baseline label -->
+          <div class="adversary-secure-label" id="adversary-secure-text">
+            <span>🔒</span> Channel secure – no tampering detected
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- ── PROCESS TIMELINE ── -->
+      <section class="timeline-section" id="timeline-section">
+        <div class="timeline-header-text">PROCESS TIMELINE</div>
+        <div class="timeline-track">
+          
+          <div class="timeline-step step--inactive" id="tl-upload">
+            <div class="tl-node">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+              </svg>
+            </div>
+            <div class="tl-label">UPLOAD</div>
+          </div>
+          
+          <div class="timeline-connector" id="tl-c1"></div>
+          
+          <div class="timeline-step step--inactive" id="tl-hash">
+            <div class="tl-node">#</div>
+            <div class="tl-label">HASH</div>
+          </div>
+          
+          <div class="timeline-connector" id="tl-c2"></div>
+          
+          <div class="timeline-step step--inactive" id="tl-sign">
+            <div class="tl-node">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </div>
+            <div class="tl-label">SIGN</div>
+          </div>
+          
+          <div class="timeline-connector" id="tl-c3"></div>
+          
+          <div class="timeline-step step--inactive" id="tl-transmit">
+            <div class="tl-node">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+            </div>
+            <div class="tl-label">TRANSMIT</div>
+          </div>
+          
+          <div class="timeline-connector" id="tl-c4"></div>
+          
+          <div class="timeline-step step--inactive" id="tl-modify">
+            <div class="tl-node">⚠️</div>
+            <div class="tl-label">MODIFY</div>
+          </div>
+          
+          <div class="timeline-connector" id="tl-c5"></div>
+          
+          <div class="timeline-step step--inactive" id="tl-verify">
+            <div class="tl-node">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div class="tl-label">VERIFY</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── REPORT PANEL ── -->
+      <section class="report-panel hidden" id="report-panel">
+        <div class="report-header">
+          <span class="report-icon">📋</span>
+          <h2>Cryptographic Verification Report</h2>
+          <span class="report-badge">OpenSSL · RSA-2048 · SHA-256</span>
+        </div>
+        <div class="report-grid">
+          <div class="report-row">
+            <div class="rr-label">Original SHA-256</div>
+            <div class="rr-value mono" id="rpt-original-hash">—</div>
+          </div>
+          <div class="report-row" id="rr-current">
+            <div class="rr-label">Current SHA-256</div>
+            <div class="rr-value mono" id="rpt-current-hash">—</div>
+          </div>
+          <div class="report-divider"></div>
+          <div class="report-row">
+            <div class="rr-label">Hash Integrity</div>
+            <div class="rr-value"><span class="rr-badge" id="rpt-integrity">—</span></div>
+          </div>
+          <div class="report-row">
+            <div class="rr-label">Signature Validity</div>
+            <div class="rr-value"><span class="rr-badge" id="rpt-signature">—</span></div>
+          </div>
+          <div class="report-row">
+            <div class="rr-label">Document Authenticity</div>
+            <div class="rr-value"><span class="rr-badge" id="rpt-authenticity">—</span></div>
+          </div>
+          <div class="report-divider"></div>
+          <div class="report-row">
+            <div class="rr-label">OpenSSL Output</div>
+            <div class="rr-value"><code class="openssl-output" id="rpt-openssl">—</code></div>
+          </div>
+        </div>
+        <div class="final-verdict" id="final-verdict">
+          <div class="verdict-label">Final Verdict</div>
+          <div class="status" id="verdict-status">Awaiting verification…</div>
+        </div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="main-footer">
+        <div class="footer-left">
+          <span>© 2024 CYPHR_CORE ENGINE. NO_LOGS_RETAINED.</span>
+          <span class="footer-links">
+            <a href="#">Security Policy</a>
+            <a href="#">API Reference</a>
+            <a href="#">Status</a>
+          </span>
+        </div>
+        <div class="footer-right">
+          🛡️ ENCRYPTED_FLOW_ACTIVE
+        </div>
+      </footer>
+
+    </main>
+
   </div>
 
-  <!-- ── TIMELINE ── -->
-  <section class="timeline-section" id="timeline-section">
-    <div class="timeline-title">Process Timeline</div>
-    <div class="timeline-track">
-      <div class="timeline-step step--inactive" id="tl-upload">
-        <div class="tl-node"><span>⬆️</span></div>
-        <div class="tl-label">Upload</div>
-      </div>
-      <div class="timeline-connector" id="tl-c1"></div>
-      <div class="timeline-step step--inactive" id="tl-hash">
-        <div class="tl-node"><span>🔢</span></div>
-        <div class="tl-label">Hash</div>
-      </div>
-      <div class="timeline-connector" id="tl-c2"></div>
-      <div class="timeline-step step--inactive" id="tl-sign">
-        <div class="tl-node"><span>✍️</span></div>
-        <div class="tl-label">Sign</div>
-      </div>
-      <div class="timeline-connector" id="tl-c3"></div>
-      <div class="timeline-step step--inactive" id="tl-transmit">
-        <div class="tl-node"><span>📡</span></div>
-        <div class="tl-label">Transmit</div>
-      </div>
-      <div class="timeline-connector" id="tl-c4"></div>
-      <div class="timeline-step step--inactive" id="tl-modify">
-        <div class="tl-node"><span>⚠️</span></div>
-        <div class="tl-label">Modify</div>
-      </div>
-      <div class="timeline-connector" id="tl-c5"></div>
-      <div class="timeline-step step--inactive" id="tl-verify">
-        <div class="tl-node"><span>🔍</span></div>
-        <div class="tl-label">Verify</div>
-      </div>
-    </div>
-  </section>
+</div>
 
-  <!-- ── REPORT PANEL ── -->
-  <section class="report-panel hidden" id="report-panel">
-    <div class="report-header">
-      <span class="report-icon">📋</span>
-      <h2>Cryptographic Verification Report</h2>
-      <span class="report-badge">OpenSSL · RSA-2048 · SHA-256</span>
-    </div>
-    <div class="report-grid">
-      <div class="report-row">
-        <div class="rr-label">Original SHA-256</div>
-        <div class="rr-value mono" id="rpt-original-hash">—</div>
-      </div>
-      <div class="report-row" id="rr-current">
-        <div class="rr-label">Current SHA-256</div>
-        <div class="rr-value mono" id="rpt-current-hash">—</div>
-      </div>
-      <div class="report-divider"></div>
-      <div class="report-row">
-        <div class="rr-label">Hash Integrity</div>
-        <div class="rr-value"><span class="rr-badge" id="rpt-integrity">—</span></div>
-      </div>
-      <div class="report-row">
-        <div class="rr-label">Signature Validity</div>
-        <div class="rr-value"><span class="rr-badge" id="rpt-signature">—</span></div>
-      </div>
-      <div class="report-row">
-        <div class="rr-label">Document Authenticity</div>
-        <div class="rr-value"><span class="rr-badge" id="rpt-authenticity">—</span></div>
-      </div>
-      <div class="report-divider"></div>
-      <div class="report-row">
-        <div class="rr-label">OpenSSL Output</div>
-        <div class="rr-value"><code class="openssl-output" id="rpt-openssl">—</code></div>
-      </div>
-    </div>
-    <div class="final-verdict" id="final-verdict">
-      <div class="verdict-label">Final Verdict</div>
-      <div class="status" id="verdict-status">Awaiting verification…</div>
-    </div>
-  </section>
-
-</main>
-
-<!-- Adversary Tamper Modal (Man-in-the-Middle simulator) -->
+<!-- Adversary Tamper Modal -->
 <div id="tamper-modal" class="modal-overlay hidden">
   <div class="modal-content glass-card">
     <div class="modal-header">
@@ -302,7 +369,7 @@
     <div class="modal-body">
       <p class="modal-expl">
         As the <strong>Adversary</strong>, you have successfully intercepted the document package mid-transit. 
-        To simulate tampering with the data on the command-line, edit the contents directly inside this terminal session:
+        Edit the contents directly inside this terminal session:
       </p>
       
       <div class="terminal-box">
@@ -323,19 +390,12 @@
       <div class="modal-actions">
         <button class="btn-actor btn-cancel-tamper" onclick="closeTamperModal()">Cancel Intercept</button>
         <button class="btn-actor btn-inject-tamper" onclick="submitTamperPayload()">
-          <span>⚡</span> Inject Tampered Document
+          Inject Tampered Document
         </button>
       </div>
     </div>
   </div>
 </div>
-
-
-<footer>
-  <div class="footer-inner">
-    <div class="footer-brand">🛡️ Digital Signature Integrity Platform · CRPAAT</div>
-  </div>
-</footer>
 
 <script src="script.js"></script>
 </body>
