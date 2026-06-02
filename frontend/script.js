@@ -1,242 +1,338 @@
-// ─── Session State ────────────────────────────────────────────────────────────
+// ── Session State ────────────────────────────────────────────────────────────
 const session = {
-  e: null,
-  d: null,
-  n: null,
-  currentSignature: null,
-  currentDoc: null
+  documentUploaded: false,
+  signed:           false,
+  transmitted:      false,
+  tampered:         false,
+  verified:         false,
+  originalHash:     null,
+  currentHash:      null,
+  verdict:          null,
+  selectedFile:     null,
 };
 
-// ─── Navigation ───────────────────────────────────────────────────────────────
-function showSection(id) {
-  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const navBtn = document.getElementById('nav-' + id);
-  if (navBtn) navBtn.classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  updateKeyStatusBars();
+// ── Timeline Helper ──────────────────────────────────────────────────────────
+const TL_STEPS = ['upload','hash','sign','transmit','modify','verify'];
+
+function setTimelineStep(name, state) {
+  // state: 'active' | 'done' | 'threat' | 'inactive'
+  const el = document.getElementById('tl-' + name);
+  if (!el) return;
+  el.className = 'timeline-step step--' + (state === 'inactive' ? 'inactive' : state);
 }
 
-// ─── Update Key Status Indicators ────────────────────────────────────────────
-function updateKeyStatusBars() {
-  // Sign section key status
-  const signBar  = document.getElementById('key-status-sign');
-  const signIcon = document.getElementById('key-status-sign-icon');
-  const signText = document.getElementById('key-status-sign-text');
-  if (session.e && session.d && session.n) {
-    signBar.classList.add('ok');
-    signIcon.textContent = '✅';
-    signText.textContent = `Keys loaded — Public (e=${session.e}, n=${session.n}) · Private (d=${session.d})`;
-    signBar.querySelector('.btn-small').style.display = 'none';
-  } else {
-    signBar.classList.remove('ok');
-    signIcon.textContent = '⚠️';
-    signText.textContent = 'No keys loaded. Please generate keys first.';
-    signBar.querySelector('.btn-small').style.display = '';
-  }
-
-  // Tamper section key status
-  const tamperBar = document.getElementById('tamper-key-status');
-  if (session.currentSignature) {
-    tamperBar.classList.add('ok');
-    tamperBar.innerHTML = `<span>✅</span><span>Signature loaded from Step 2 — ready to test tampering.</span>`;
-    // Update original doc display
-    const origDisplay = document.getElementById('tamper-original-doc');
-    if (session.currentDoc && origDisplay) {
-      origDisplay.textContent = session.currentDoc;
-    }
-  }
+function setConnector(id, state) {
+  const el = document.getElementById('tl-c' + id);
+  if (!el) return;
+  el.className = 'timeline-connector ' + state;
 }
 
-// ─── Step 1: Key Generation ───────────────────────────────────────────────────
-async function generateKeys() {
+// ── Actor UI Helpers ─────────────────────────────────────────────────────────
+function setActorState(actorPrefix, field, stateClass, text) {
+  const el = document.getElementById(actorPrefix + '-' + field + '-state');
+  if (!el) return;
+  el.className = 'si-state ' + stateClass;
+  el.textContent = text;
+}
+
+function setBtn(id, enabled) {
+  const el = document.getElementById(id);
+  if (el) el.disabled = !enabled;
+}
+
+function truncateHash(hash, n = 16) {
+  if (!hash) return '—';
+  return hash.slice(0, n) + '…' + hash.slice(-8);
+}
+
+// ── API 0: Generate Keypair ──────────────────────────────────────────────────
+async function generateKeypair() {
   const btn = document.getElementById('btn-keygen');
   btn.disabled = true;
-  btn.textContent = '⏳ Generating…';
+  btn.innerHTML = '<span class="btn-icon">⏳</span> Generating…';
 
   try {
-    const res  = await fetch('/api/keygen');
-    if (!res.ok) throw new Error('Server error: ' + res.status);
+    const res  = await fetch('/api/generate-keypair', { method: 'POST' });
     const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
-    session.e = data.e;
-    session.d = data.d;
-    session.n = data.n_pub;
+    document.getElementById('pub-fingerprint').textContent = data.fingerprint;
+    document.getElementById('keygen-result').classList.remove('hidden');
+    btn.innerHTML = '<span class="btn-icon">✅</span> Keys Generated';
+    btn.style.background = 'linear-gradient(135deg, #00aa44, #007733)';
 
-    document.getElementById('pub-e').textContent  = data.e;
-    document.getElementById('pub-n').textContent  = data.n_pub;
-    document.getElementById('priv-d').textContent = data.d;
-    document.getElementById('priv-n').textContent = data.n_priv;
+    const pill = document.querySelector('.key-status-pill');
+    pill.classList.add('ready');
+    document.getElementById('key-pill-text').textContent = 'RSA-2048 · Keys Ready';
 
-    document.getElementById('key-output').classList.remove('hidden');
-    updateKeyStatusBars();
-
-    btn.textContent = '✅ Keys Generated';
-    btn.style.background = 'linear-gradient(135deg, #00ff88, #00cc66)';
+    setBtn('btn-upload', false); // will enable after file select
   } catch (err) {
-    alert('❌ Error generating keys.\n\nMake sure the Flask server is running:\n  cd server/ && python app.py\n\nAlso verify the C++ binary was compiled:\n  make');
-    console.error(err);
     btn.disabled = false;
-    btn.innerHTML = '<span class="btn-icon">⚡</span> Generate RSA Key Pair';
+    btn.innerHTML = '<span class="btn-icon">⚡</span> Generate RSA-2048 Key Pair';
+    alert('❌ Key generation failed.\n\n' + err.message);
   }
 }
 
-// ─── Step 2: Sign Document ────────────────────────────────────────────────────
-async function signDoc() {
-  if (!session.d || !session.n) {
-    alert('⚠️ Please generate keys first (Step 1).');
-    showSection('keygen');
-    return;
-  }
+// ── File Select ──────────────────────────────────────────────────────────────
+function onFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  session.selectedFile = file;
+  document.getElementById('file-label-text').textContent = file.name;
+  document.getElementById('file-upload-label').style.borderColor = 'var(--cyan)';
+  document.getElementById('file-upload-label').style.color = 'var(--cyan)';
+  setBtn('btn-upload', true);
+}
 
-  const message = document.getElementById('doc-input').value.trim();
-  if (!message) {
-    alert('⚠️ Please enter a document to sign.');
-    return;
-  }
+// ── API 1: Upload ────────────────────────────────────────────────────────────
+async function uploadDocument() {
+  if (!session.selectedFile) return;
+  const btn = document.getElementById('btn-upload');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Uploading…';
 
+  const form = new FormData();
+  form.append('document', session.selectedFile);
+
+  try {
+    const res  = await fetch('/api/upload', { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
+
+    session.documentUploaded = true;
+    session.originalHash = data.originalHash;
+
+    // Update Alice doc status
+    setActorState('alice', 'doc', 'si-active', 'Uploaded');
+    setTimelineStep('upload', 'done');
+    setTimelineStep('hash',   'active');
+    setConnector(1, 'done');
+
+    // Show hash step completing
+    setTimeout(() => {
+      setTimelineStep('hash', 'done');
+      setConnector(2, 'active');
+      setBtn('btn-sign', true);
+    }, 800);
+
+    btn.innerHTML = '<span>✅</span> Uploaded';
+    btn.style.background = 'linear-gradient(135deg,#00aa44,#007733)';
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>⬆️</span> Upload';
+    alert('❌ Upload failed.\n\n' + err.message);
+  }
+}
+
+// ── API 2: Sign ──────────────────────────────────────────────────────────────
+async function signDocument() {
   const btn = document.getElementById('btn-sign');
   btn.disabled = true;
-  btn.textContent = '⏳ Signing…';
+  btn.innerHTML = '<span>⏳</span> Signing…';
 
   try {
-    const res  = await fetch('/api/sign', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ message, d: session.d, n: session.n })
-    });
-    if (!res.ok) throw new Error('Server error: ' + res.status);
+    const res  = await fetch('/api/sign', { method: 'POST' });
     const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
-    session.currentSignature = data.signature;
-    session.currentDoc       = message;
+    session.signed = true;
 
-    document.getElementById('hash-val').textContent = data.hash;
-    document.getElementById('sig-val').textContent  = data.signature;
-    document.getElementById('sign-output').classList.remove('hidden');
+    setActorState('alice', 'sig', 'si-done', 'Signed');
+    setTimelineStep('sign', 'done');
+    setConnector(2, 'done');
+    setConnector(3, 'active');
+    setTimelineStep('transmit', 'active');
+    setBtn('btn-transmit', true);
 
-    // Auto-fill verify section
-    document.getElementById('verify-doc').value = message;
-    document.getElementById('verify-sig').value = data.signature;
-
-    updateKeyStatusBars();
+    btn.innerHTML = '<span>✅</span> Signed';
+    btn.style.background = 'linear-gradient(135deg,#00aa44,#007733)';
   } catch (err) {
-    alert('❌ Error signing document. Check that the Flask server is running.');
-    console.error(err);
-  } finally {
     btn.disabled = false;
-    btn.innerHTML = '<span class="btn-icon">✍️</span> Generate Signature';
+    btn.innerHTML = '<span>✍️</span> Sign Document';
+    alert('❌ Signing failed.\n\n' + err.message);
   }
 }
 
-// ─── Step 3: Verify Document ──────────────────────────────────────────────────
-async function verifyDoc() {
-  if (!session.e || !session.n) {
-    alert('⚠️ Please generate keys first (Step 1).');
-    showSection('keygen');
-    return;
-  }
-
-  const message   = document.getElementById('verify-doc').value.trim();
-  const signature = document.getElementById('verify-sig').value.trim();
-
-  if (!message || !signature) {
-    alert('⚠️ Please enter both the document and signature.');
-    return;
-  }
+// ── API 3: Transmit ──────────────────────────────────────────────────────────
+async function transmitDocument() {
+  const btn = document.getElementById('btn-transmit');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Transmitting…';
 
   try {
-    const res  = await fetch('/api/verify', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ message, signature, e: session.e, n: session.n })
-    });
-    if (!res.ok) throw new Error('Server error: ' + res.status);
+    const res  = await fetch('/api/transmit', { method: 'POST' });
     const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
-    const box = document.getElementById('verify-result');
-    box.classList.remove('hidden');
+    session.transmitted = true;
 
-    if (data.result === 'VALID') {
-      box.innerHTML = `
-        <div class="status valid">✅ VALID SIGNATURE — Document is Authentic</div>
-        <p style="margin-top:12px; color:var(--text-dim); font-size:0.86em; line-height:1.7">
-          The recovered hash <code style="color:var(--cyan);font-family:monospace">σ<sup>e</sup> mod n</code>
-          matches the recomputed hash <code style="color:var(--cyan);font-family:monospace">H(message)</code>.
-          The document has not been tampered with and the signature is valid.
-        </p>`;
-    } else {
-      box.innerHTML = `
-        <div class="status invalid">❌ INVALID SIGNATURE — Verification Failed</div>
-        <p style="margin-top:12px; color:var(--text-dim); font-size:0.86em; line-height:1.7">
-          The recovered hash does not match the recomputed hash.
-          The document has been modified or the signature is incorrect.
-        </p>`;
-    }
+    setTimelineStep('transmit', 'done');
+    setConnector(3, 'done');
+    setConnector(4, 'active');
+    setTimelineStep('modify', 'active');
+
+    // Activate Bob card
+    document.getElementById('bob-card').classList.add('active');
+    setActorState('bob', 'doc', 'si-active', 'Received');
+    setActorState('bob', 'sig', 'si-active', 'Received');
+
+    // Enable adversary and Bob verify
+    setBtn('btn-modify', true);
+    setBtn('btn-verify', true);
+
+    btn.innerHTML = '<span>✅</span> Transmitted';
+    btn.style.background = 'linear-gradient(135deg,#00aa44,#007733)';
   } catch (err) {
-    alert('❌ Error verifying document. Check that the Flask server is running.');
-    console.error(err);
+    btn.disabled = false;
+    btn.innerHTML = '<span>📡</span> Transmit';
+    alert('❌ Transmit failed.\n\n' + err.message);
   }
 }
 
-// ─── Step 4: Tamper Demo ──────────────────────────────────────────────────────
-async function runTamperDemo() {
-  if (!session.currentSignature) {
-    alert('⚠️ Please sign a document first (Step 2) to get a signature for testing.');
-    showSection('sign');
-    return;
-  }
-
-  const tamperedDoc = document.getElementById('tamper-doc').value.trim();
-  if (!tamperedDoc) {
-    alert('⚠️ Please enter a (tampered) document to test.');
-    return;
-  }
+// ── API 4: Modify ────────────────────────────────────────────────────────────
+async function modifyDocument() {
+  const btn = document.getElementById('btn-modify');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Modifying…';
 
   try {
-    const res  = await fetch('/api/verify', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        message:   tamperedDoc,
-        signature: session.currentSignature,
-        e:         session.e,
-        n:         session.n
-      })
-    });
-    if (!res.ok) throw new Error('Server error: ' + res.status);
+    const res  = await fetch('/api/modify', { method: 'POST' });
     const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
-    const resultBox  = document.getElementById('tamper-result');
-    const explainBox = document.getElementById('tamper-explanation');
-    resultBox.classList.remove('hidden');
+    session.tampered = true;
 
-    if (data.result === 'VALID') {
-      resultBox.innerHTML = `
-        <div class="status valid">
-          ✅ VALID (Hash collision detected — try a different modification)
-        </div>
-        <p class="note" style="margin-top:8px">
-          This document happened to produce the same hash. Try changing more characters.
-        </p>`;
-    } else {
-      resultBox.innerHTML = `
-        <div class="status invalid">
-          ⚠️ DOCUMENT TAMPERED — INTEGRITY FAILURE DETECTED
-        </div>
-        <p class="note" style="margin-top:8px">
-          The signature was valid for the original document. This tampered version fails verification.
-        </p>`;
-      explainBox.classList.remove('hidden');
-    }
+    // Adversary card goes RED
+    const advCard = document.getElementById('adversary-card');
+    advCard.classList.add('threat-active');
+    document.getElementById('tamper-status-box').classList.add('threat');
+    document.getElementById('tsb-text').textContent = '⚠️ Document tampered!';
+
+    // Show diff
+    const origText = data.original || '';
+    const tampText = data.tampered || '';
+    document.getElementById('diff-original').textContent = origText.trim().slice(0, 60);
+    document.getElementById('diff-tampered').textContent = tampText.trim().slice(0, 60);
+    document.getElementById('tamper-diff').classList.remove('hidden');
+
+    // Bob statuses go to threat
+    setActorState('bob', 'doc', 'si-threat', 'Tampered');
+
+    // Timeline
+    setTimelineStep('modify',  'threat');
+    setConnector(4, 'threat');
+    setConnector(5, 'threat');
+    setTimelineStep('verify',  'active');
+
+    btn.innerHTML = '<span>✅</span> Modified';
+    btn.style.background = 'linear-gradient(135deg,#aa0000,#770000)';
   } catch (err) {
-    alert('❌ Error running tamper demo. Check that the Flask server is running.');
-    console.error(err);
+    btn.disabled = false;
+    btn.innerHTML = '<span>✂️</span> Modify Document';
+    alert('❌ Modify failed.\n\n' + err.message);
   }
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// ── API 5: Verify ────────────────────────────────────────────────────────────
+async function verifyDocument() {
+  const btn = document.getElementById('btn-verify');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Verifying…';
+
+  try {
+    const res  = await fetch('/api/verify', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
+
+    session.verified    = true;
+    session.originalHash = data.originalHash;
+    session.currentHash  = data.currentHash;
+    session.verdict      = data.isValid ? 'valid' : 'invalid';
+
+    // Timeline
+    setTimelineStep('verify', 'done');
+    if (!session.tampered) {
+      setConnector(4, 'done');
+      setConnector(5, 'done');
+    }
+
+    // Bob statuses
+    if (data.isValid) {
+      setActorState('bob', 'doc', 'si-done', 'Authentic');
+      setActorState('bob', 'sig', 'si-done', 'Valid');
+    } else {
+      setActorState('bob', 'doc', 'si-threat', 'Tampered');
+      setActorState('bob', 'sig', 'si-threat', 'INVALID');
+    }
+
+    // Bob verdict banner
+    const banner = document.getElementById('verdict-banner');
+    banner.style.background   = data.isValid ? 'rgba(0,255,136,0.08)' : 'rgba(255,68,68,0.1)';
+    banner.style.borderColor  = data.isValid ? 'rgba(0,255,136,0.3)'  : 'rgba(255,68,68,0.4)';
+    banner.style.color        = data.isValid ? 'var(--green)'         : 'var(--red)';
+    banner.textContent        = data.isValid ? '✅ Signature Valid — Document Authentic' : '❌ Signature Invalid — Document Tampered';
+    document.getElementById('bob-result').classList.remove('hidden');
+
+    // Build report
+    buildReport(data);
+
+    btn.innerHTML = '<span>✅</span> Verified';
+    btn.style.background = data.isValid
+      ? 'linear-gradient(135deg,#00aa44,#007733)'
+      : 'linear-gradient(135deg,var(--red),#aa1111)';
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>🔍</span> Verify Signature';
+    alert('❌ Verification failed.\n\n' + err.message);
+  }
+}
+
+// ── Build Report Panel ───────────────────────────────────────────────────────
+function buildReport(data) {
+  // Hashes
+  document.getElementById('rpt-original-hash').textContent = data.originalHash || '—';
+  document.getElementById('rpt-current-hash').textContent  = data.currentHash  || '—';
+
+  // Highlight hash row red if mismatch
+  if (!data.hashMatch) {
+    document.getElementById('rr-current').style.background     = 'rgba(255,68,68,0.05)';
+    document.getElementById('rr-current').style.borderColor    = 'rgba(255,68,68,0.3)';
+  }
+
+  // Badges
+  setBadge('rpt-integrity',    data.hashMatch,  'INTACT',   'MODIFIED');
+  setBadge('rpt-signature',    data.isValid,    'VALID',    'INVALID');
+  setBadge('rpt-authenticity', data.isValid,    'VERIFIED', 'FAILED');
+
+  // OpenSSL raw output
+  const opensslEl = document.getElementById('rpt-openssl');
+  opensslEl.textContent = data.openSslResult || '—';
+  opensslEl.className   = 'openssl-output ' + (data.isValid ? 'ok' : 'bad');
+
+  // Final verdict
+  const statusEl = document.getElementById('verdict-status');
+  if (data.isValid) {
+    statusEl.textContent = '✅ INTEGRITY VERIFIED — Document is Authentic and Unmodified';
+    statusEl.className   = 'status valid';
+  } else {
+    statusEl.textContent = '🚨 INTEGRITY BREACH — Document was Modified After Signing';
+    statusEl.className   = 'status invalid';
+  }
+
+  document.getElementById('report-panel').classList.remove('hidden');
+  document.getElementById('report-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function setBadge(id, isOk, okText, badText) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = isOk ? okText : badText;
+  el.className   = 'rr-badge ' + (isOk ? 'ok' : 'bad');
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  showSection('home');
+  // All actor buttons start disabled
+  ['btn-upload','btn-sign','btn-transmit','btn-modify','btn-verify']
+    .forEach(id => setBtn(id, false));
 });

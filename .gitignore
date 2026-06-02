@@ -1,3 +1,15 @@
+# C++ artifacts
 backend/rsa_engine
-__pycache__/
 *.o
+
+# Node.js
+server/node_modules/
+
+# Runtime directories
+uploads/
+signatures/
+keys/
+
+# Python
+__pycache__/
+*.pyc
