@@ -85,7 +85,7 @@ openssl dgst -sha256 -verify server/keys/public.pem -signature server/signatures
 
 ---
 
-## Secure Software Engineering Highlights (Professor-Proof Features)
+## Secure Software Engineering Highlights 
 
 * **Immunized Against Command Injection**:  
   Rather than using traditional string-concatenated shell executors (`child_process.execSync`) which are highly vulnerable to input injection vectors, this server utilizes safe child process argument execution:
