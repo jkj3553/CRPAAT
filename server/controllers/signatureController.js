@@ -74,7 +74,8 @@ function transmit(req, res) {
 function modify(req, res) {
   try {
     if (!state.transmitted) return res.status(400).json({ error: 'Document not transmitted.' });
-    const { original, tampered } = openssl.createTamperedFile();
+    const { tamperedContent } = req.body || {};
+    const { original, tampered } = openssl.createTamperedFile(tamperedContent);
     state.tampered = true;
     state.originalContent = original;
     state.tamperedContent = tampered;

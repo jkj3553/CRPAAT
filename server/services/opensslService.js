@@ -43,16 +43,18 @@ function signFile() {
   run(`openssl dgst -sha256 -sign "${PRIVATE_KEY}" -out "${SIG_FILE}" "${ORIG_FILE}"`);
 }
 
-function createTamperedFile() {
+function createTamperedFile(customContent) {
   const original = fs.readFileSync(ORIG_FILE, 'utf8');
-  // Replace first occurrence of a number pattern to simulate salary fraud
-  // If the file has a specific pattern we use it, otherwise we append a tamper mark
   let tampered;
-  const numMatch = original.match(/(\d+)/);
-  if (numMatch) {
-    tampered = original.replace(numMatch[0], String(parseInt(numMatch[0]) * 5));
+  if (customContent !== undefined && customContent !== null) {
+    tampered = customContent;
   } else {
-    tampered = original + '\n[TAMPERED BY ADVERSARY]';
+    const numMatch = original.match(/(\d+)/);
+    if (numMatch) {
+      tampered = original.replace(numMatch[0], String(parseInt(numMatch[0]) * 5));
+    } else {
+      tampered = original + '\n[TAMPERED BY ADVERSARY]';
+    }
   }
   fs.writeFileSync(TAMPERED_FILE, tampered, 'utf8');
   return { original, tampered };

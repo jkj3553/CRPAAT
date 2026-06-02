@@ -237,14 +237,52 @@ async function transmitDocument() {
   }
 }
 
+// ── Open / Close Modal ────────────────────────────────────────────────────────
+function closeTamperModal() {
+  document.getElementById('tamper-modal').classList.add('hidden');
+  const btn = document.getElementById('btn-modify');
+  btn.disabled = false;
+  btn.innerHTML = '<span>✂️</span> Modify Document';
+}
+
 // ── API 4: Modify ────────────────────────────────────────────────────────────
 async function modifyDocument() {
   const btn = document.getElementById('btn-modify');
   btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Intercepting…';
+
+  try {
+    // Fetch state to get the original file content
+    const stateRes = await fetch('/api/state');
+    const stateData = await stateRes.json();
+    if (!stateRes.ok || stateData.error) throw new Error(stateData.error || 'Failed to fetch original file.');
+
+    // Populate modal textarea with original file content
+    const textarea = document.getElementById('modal-tamper-text');
+    textarea.value = stateData.originalContent || '';
+
+    // Show interactive modal
+    document.getElementById('tamper-modal').classList.remove('hidden');
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>✂️</span> Modify Document';
+    alert('❌ Interception failed.\n\n' + err.message);
+  }
+}
+
+async function submitTamperPayload() {
+  const btn = document.getElementById('btn-modify');
+  const modalText = document.getElementById('modal-tamper-text').value;
+
+  document.getElementById('tamper-modal').classList.add('hidden');
   btn.innerHTML = '<span>⏳</span> Modifying…';
 
   try {
-    const res  = await fetch('/api/modify', { method: 'POST' });
+    const res  = await fetch('/api/modify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tamperedContent: modalText })
+    });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
@@ -281,7 +319,6 @@ async function modifyDocument() {
   } catch (err) {
     btn.disabled = false;
     btn.innerHTML = '<span>✂️</span> Modify Document';
-    alert('❌ Modify failed.\n\n' + err.message);
   }
 }
 

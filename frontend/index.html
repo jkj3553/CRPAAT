@@ -292,6 +292,45 @@
 
 </main>
 
+<!-- Adversary Tamper Modal (Man-in-the-Middle simulator) -->
+<div id="tamper-modal" class="modal-overlay hidden">
+  <div class="modal-content glass-card">
+    <div class="modal-header">
+      <h3>🕵️ Man-in-the-Middle Interception &amp; Tampering</h3>
+      <button class="btn-close-modal" onclick="closeTamperModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-expl">
+        As the <strong>Adversary</strong>, you have successfully intercepted the document package mid-transit. 
+        To simulate tampering with the data on the command-line, edit the contents directly inside this terminal session:
+      </p>
+      
+      <div class="terminal-box">
+        <div class="terminal-header">
+          <span class="term-dot red"></span>
+          <span class="term-dot yellow"></span>
+          <span class="term-dot green"></span>
+          <span class="term-title">bash - adversary@mitm-node: ~/network-stream</span>
+        </div>
+        <div class="terminal-body">
+          <span class="term-prompt">adversary@mitm:~$</span> <span class="term-cmd">cat &lt;&lt; 'EOF' &gt; uploads/tampered.txt</span><br>
+          <span class="term-ghost"># Modify the document payload as you wish:</span><br>
+          <textarea id="modal-tamper-text" class="terminal-textarea" spellcheck="false"></textarea><br>
+          <span class="term-cmd">EOF</span>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="btn-actor btn-cancel-tamper" onclick="closeTamperModal()">Cancel Intercept</button>
+        <button class="btn-actor btn-inject-tamper" onclick="submitTamperPayload()">
+          <span>⚡</span> Inject Tampered Document
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">🛡️ Digital Signature Integrity Platform · CRPAAT</div>
