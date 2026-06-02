@@ -14,6 +14,7 @@
   --orange:   #ff8844;
   --red:      #ff4444;
   --red-dim:  #ff444422;
+  --yellow:   #ffb86c;
   --pink:     #ff44aa;
   --text:     #dde8f0;
   --text-dim: #7a90a8;
@@ -393,7 +394,7 @@ footer { border-top: 1px solid var(--border); padding: 28px 24px; background: va
 ══════════════════════════════════════════════════════════ */
 .comm-layout {
   display: grid;
-  grid-template-columns: 1fr 120px 1fr;
+  grid-template-columns: 1fr 200px 1fr;
   gap: 0;
   align-items: stretch;
 }
@@ -420,6 +421,7 @@ footer { border-top: 1px solid var(--border); padding: 28px 24px; background: va
 /* icon-box state colours */
 .icon-box.ib--idle    { border-color: var(--border); }
 .icon-box.ib--active  { border-color: rgba(0,212,255,0.5); box-shadow: 0 0 12px rgba(0,212,255,0.15); }
+.icon-box.ib--hash    { border-color: rgba(255,184,108,0.55); box-shadow: 0 0 12px rgba(255,184,108,0.15); }
 .icon-box.ib--done    { border-color: rgba(0,255,136,0.45); box-shadow: 0 0 12px rgba(0,255,136,0.12); }
 .icon-box.ib--threat  { border-color: rgba(255,68,68,0.55); box-shadow: 0 0 14px rgba(255,68,68,0.2); }
 
@@ -451,12 +453,13 @@ footer { border-top: 1px solid var(--border); padding: 28px 24px; background: va
   align-items: center;
   justify-content: center;
   position: relative;
-  padding-top: 28px; /* align with card content */
+  padding-top: 15px; /* align with card content */
 }
 .pipeline-label {
-  font-size: 0.6em; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 1px; color: var(--text-mute);
-  white-space: nowrap; margin-bottom: 10px;
+  font-size: 0.58em; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.2px; color: var(--text-mute);
+  white-space: nowrap;
+  position: absolute; top: -14px;
 }
 .pipeline-track {
   position: relative; width: 100%; display: flex; align-items: center; justify-content: center;

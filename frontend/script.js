@@ -35,6 +35,7 @@ function setIconBox(id, state, statusText) {
   const st = box.querySelector('.ib-status');
   if (st) {
     if (state === 'active')      st.style.color = 'var(--cyan)';
+    else if (state === 'hash')   st.style.color = 'var(--yellow)';
     else if (state === 'done')   st.style.color = 'var(--green)';
     else if (state === 'threat') st.style.color = 'var(--red)';
     else                         st.style.color = 'var(--text-mute)';
@@ -172,17 +173,27 @@ async function uploadDocument() {
 async function signDocument() {
   const btn = document.getElementById('btn-sign');
   btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span> Signing…';
+  btn.innerHTML = '<span>⏳</span> Hashing Document…';
 
   try {
     const res  = await fetch('/api/sign', { method: 'POST' });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || 'Server error');
 
-    session.signed = true;
+    // Phase 1: Glow Yellow and show Hash Symbol Hashing
+    setIconBox('alice-sig-box', 'hash', 'SHA-256 Hash...');
+    document.getElementById('alice-sig-icon').textContent = '#️⃣';
 
+    // Visual pause representing hashing to signature processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    session.signed = true;
+    btn.innerHTML = '<span>⏳</span> Signing Hash…';
+
+    // Phase 2: Glow Green and transition to Signature Symbol
     setIconBox('alice-sig-box', 'done', 'Signed ✓');
     document.getElementById('alice-sig-icon').textContent = '🔒';
+
     setTimelineStep('sign', 'done');
     setConnector(2, 'done');
     setConnector(3, 'active');
@@ -288,34 +299,26 @@ async function submitTamperPayload() {
 
     session.tampered = true;
 
-    // Pipeline turns red
-    setPipeline('threat');
-
-    // Adversary card goes RED
-    const advCard = document.getElementById('adversary-card');
-    advCard.classList.add('threat-active');
-    document.getElementById('tamper-status-box').classList.add('threat');
-    document.getElementById('tsb-text').textContent = '⚠️ TAMPERING ACTIVE';
-    document.getElementById('adv-dot').classList.add('active');
-
-    // Show diff
+    // Show diff on the Adversary card (privately for user awareness)
     const origText = data.original || '';
     const tampText = data.tampered || '';
     document.getElementById('diff-original').textContent = origText.trim().slice(0, 60);
     document.getElementById('diff-tampered').textContent = tampText.trim().slice(0, 60);
     document.getElementById('tamper-diff').classList.remove('hidden');
 
-    // Bob doc icon goes threat
-    setIconBox('bob-doc-box', 'threat', 'Tampered ⚠');
-
-    // Timeline
-    setTimelineStep('modify',  'threat');
-    setConnector(4, 'threat');
-    setConnector(5, 'threat');
-    setTimelineStep('verify',  'active');
+    // Keep pipeline/Bob completely unaware!
+    // Timeline steps stay normal, verify is active
+    setTimelineStep('modify', 'done');
+    setConnector(4, 'active');
+    setConnector(5, 'active');
+    setTimelineStep('verify', 'active');
+    
+    // Always ensure Verify button is unlocked/accessible for repetitive runs
+    setBtn('btn-verify', true);
 
     btn.innerHTML = '<span>✅</span> Modified';
     btn.style.background = 'linear-gradient(135deg,#aa0000,#770000)';
+    btn.disabled = false; // Allow modifying it again!
   } catch (err) {
     btn.disabled = false;
     btn.innerHTML = '<span>✂️</span> Modify Document';
@@ -338,20 +341,49 @@ async function verifyDocument() {
     session.currentHash  = data.currentHash;
     session.verdict      = data.isValid ? 'valid' : 'invalid';
 
-    // Timeline
-    setTimelineStep('verify', 'done');
-    if (!session.tampered) {
-      setConnector(4, 'done');
-      setConnector(5, 'done');
-    }
+    // Bob & Adversary Visual States based on OpenSSL Cryptographic Verdict
+    const advCard = document.getElementById('adversary-card');
+    const tsb = document.getElementById('tamper-status-box');
+    const advDot = document.getElementById('adv-dot');
 
-    // Bob statuses
     if (data.isValid) {
+      // 🛡️ Authentic State
+      setPipeline('flow');
+      
+      // Bob card statuses
       setIconBox('bob-doc-box', 'done', 'Authentic ✓');
       setIconBox('bob-sig-box', 'done', 'Valid ✓');
+
+      // Deactivate adversary threat highlights
+      advCard.classList.remove('threat-active');
+      tsb.className = 'tamper-status-box';
+      document.getElementById('tsb-text').textContent = '🛡️ SYSTEM SECURE';
+      advDot.classList.remove('active');
+
+      // Timeline success
+      setTimelineStep('modify', 'done');
+      setConnector(4, 'done');
+      setConnector(5, 'done');
+      setTimelineStep('verify', 'done');
     } else {
+      // ⚠️ Tampered State Revealed!
+      setPipeline('threat');
+
+      // Bob card statuses
       setIconBox('bob-doc-box', 'threat', 'Tampered ⚠');
       setIconBox('bob-sig-box', 'threat', 'INVALID ❌');
+
+      // Activate adversary threat highlights
+      advCard.classList.add('threat-active');
+      tsb.className = 'tamper-status-box threat';
+      document.getElementById('tsb-text').textContent = '⚠️ TAMPERING ACTIVE';
+      advDot.classList.add('active');
+
+      // Timeline threat
+      setTimelineStep('modify', 'threat');
+      setConnector(4, 'threat');
+      setConnector(5, 'threat');
+      setTimelineStep('verify', 'threat');
     }
 
     // Bob verdict banner
@@ -365,7 +397,9 @@ async function verifyDocument() {
     // Build report
     buildReport(data);
 
-    btn.innerHTML = '<span>✅</span> Verified';
+    // Keep the Verify button enabled and accessible for repetitive testing
+    btn.disabled = false;
+    btn.innerHTML = '<span>🔍</span> Verify Signature';
     btn.style.background = data.isValid
       ? 'linear-gradient(135deg,#00aa44,#007733)'
       : 'linear-gradient(135deg,var(--red),#aa1111)';
@@ -386,6 +420,9 @@ function buildReport(data) {
   if (!data.hashMatch) {
     document.getElementById('rr-current').style.background     = 'rgba(255,68,68,0.05)';
     document.getElementById('rr-current').style.borderColor    = 'rgba(255,68,68,0.3)';
+  } else {
+    document.getElementById('rr-current').style.background     = 'var(--bg3)';
+    document.getElementById('rr-current').style.borderColor    = 'var(--border)';
   }
 
   // Badges
