@@ -27,12 +27,54 @@ function setConnector(id, state) {
   el.className = 'timeline-connector ' + state;
 }
 
-// ── Actor UI Helpers ─────────────────────────────────────────────────────────
-function setActorState(actorPrefix, field, stateClass, text) {
-  const el = document.getElementById(actorPrefix + '-' + field + '-state');
-  if (!el) return;
-  el.className = 'si-state ' + stateClass;
-  el.textContent = text;
+// ── Icon-Box Helper ───────────────────────────────────────────────────────────
+function setIconBox(id, state, statusText) {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.className = 'icon-box ib--' + state;
+  const st = box.querySelector('.ib-status');
+  if (st) {
+    if (state === 'active')      st.style.color = 'var(--cyan)';
+    else if (state === 'done')   st.style.color = 'var(--green)';
+    else if (state === 'threat') st.style.color = 'var(--red)';
+    else                         st.style.color = 'var(--text-mute)';
+    st.textContent = statusText;
+  }
+}
+
+// ── Pipeline Helper ───────────────────────────────────────────────────────────
+function setPipeline(state) {
+  const svg  = document.getElementById('pipeline-svg');
+  const node = document.getElementById('pipeline-node');
+  const icon = document.getElementById('pipeline-node-icon');
+  const down = document.getElementById('pipe-down-conn');
+  const arr  = document.getElementById('adv-up-arrow');
+  if (!svg) return;
+  svg.className  = 'pipeline-svg pipe--' + state;
+  node.className = 'pipeline-node' + (state !== 'idle' ? ' node--' + state : '');
+  down.className = 'pipeline-down-connector' + (state !== 'idle' ? ' conn--' + state : '');
+  if (state === 'flow') {
+    icon.textContent = '';
+    if (arr) arr.className = 'adversary-up-arrow';
+    const pkt = document.getElementById('pipe-packet');
+    if (pkt) { pkt.style.animation = 'none'; void pkt.offsetWidth; pkt.style.animation = ''; }
+    setTimeout(() => {
+      const s = document.getElementById('pipeline-svg');
+      if (s && s.classList.contains('pipe--flow')) setPipeline('idle');
+    }, 2000);
+  } else if (state === 'threat') {
+    icon.textContent = '⚠️';
+    if (arr) arr.className = 'adversary-up-arrow threat';
+  } else {
+    icon.textContent = '';
+    if (arr) arr.className = 'adversary-up-arrow';
+  }
+}
+
+// compat shim for any remaining old calls
+function setActorState(prefix, field, cls, text) {
+  const el = document.getElementById(prefix + '-' + field + '-state');
+  if (el) el.textContent = text;
 }
 
 function setBtn(id, enabled) {
@@ -44,6 +86,7 @@ function truncateHash(hash, n = 16) {
   if (!hash) return '—';
   return hash.slice(0, n) + '…' + hash.slice(-8);
 }
+
 
 // ── API 0: Generate Keypair ──────────────────────────────────────────────────
 async function generateKeypair() {
@@ -102,8 +145,8 @@ async function uploadDocument() {
     session.documentUploaded = true;
     session.originalHash = data.originalHash;
 
-    // Update Alice doc status
-    setActorState('alice', 'doc', 'si-active', 'Uploaded');
+    // Update Alice doc icon-box
+    setIconBox('alice-doc-box', 'active', session.selectedFile.name.slice(0,12));
     setTimelineStep('upload', 'done');
     setTimelineStep('hash',   'active');
     setConnector(1, 'done');
@@ -137,7 +180,8 @@ async function signDocument() {
 
     session.signed = true;
 
-    setActorState('alice', 'sig', 'si-done', 'Signed');
+    setIconBox('alice-sig-box', 'done', 'Signed ✓');
+    document.getElementById('alice-sig-icon').textContent = '🔒';
     setTimelineStep('sign', 'done');
     setConnector(2, 'done');
     setConnector(3, 'active');
@@ -166,15 +210,18 @@ async function transmitDocument() {
 
     session.transmitted = true;
 
+    // Animate pipeline: flow for 2 seconds then idle
+    setPipeline('flow');
+
     setTimelineStep('transmit', 'done');
     setConnector(3, 'done');
     setConnector(4, 'active');
     setTimelineStep('modify', 'active');
 
-    // Activate Bob card
+    // Activate Bob card icon boxes
     document.getElementById('bob-card').classList.add('active');
-    setActorState('bob', 'doc', 'si-active', 'Received');
-    setActorState('bob', 'sig', 'si-active', 'Received');
+    setIconBox('bob-doc-box', 'active', 'Received');
+    setIconBox('bob-sig-box', 'active', 'Received');
 
     // Enable adversary and Bob verify
     setBtn('btn-modify', true);
@@ -202,11 +249,15 @@ async function modifyDocument() {
 
     session.tampered = true;
 
+    // Pipeline turns red
+    setPipeline('threat');
+
     // Adversary card goes RED
     const advCard = document.getElementById('adversary-card');
     advCard.classList.add('threat-active');
     document.getElementById('tamper-status-box').classList.add('threat');
-    document.getElementById('tsb-text').textContent = '⚠️ Document tampered!';
+    document.getElementById('tsb-text').textContent = '⚠️ TAMPERING ACTIVE';
+    document.getElementById('adv-dot').classList.add('active');
 
     // Show diff
     const origText = data.original || '';
@@ -215,8 +266,8 @@ async function modifyDocument() {
     document.getElementById('diff-tampered').textContent = tampText.trim().slice(0, 60);
     document.getElementById('tamper-diff').classList.remove('hidden');
 
-    // Bob statuses go to threat
-    setActorState('bob', 'doc', 'si-threat', 'Tampered');
+    // Bob doc icon goes threat
+    setIconBox('bob-doc-box', 'threat', 'Tampered ⚠');
 
     // Timeline
     setTimelineStep('modify',  'threat');
@@ -258,11 +309,11 @@ async function verifyDocument() {
 
     // Bob statuses
     if (data.isValid) {
-      setActorState('bob', 'doc', 'si-done', 'Authentic');
-      setActorState('bob', 'sig', 'si-done', 'Valid');
+      setIconBox('bob-doc-box', 'done', 'Authentic ✓');
+      setIconBox('bob-sig-box', 'done', 'Valid ✓');
     } else {
-      setActorState('bob', 'doc', 'si-threat', 'Tampered');
-      setActorState('bob', 'sig', 'si-threat', 'INVALID');
+      setIconBox('bob-doc-box', 'threat', 'Tampered ⚠');
+      setIconBox('bob-sig-box', 'threat', 'INVALID ❌');
     }
 
     // Bob verdict banner
@@ -332,7 +383,17 @@ function setBadge(id, isOk, okText, badText) {
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // All actor buttons start disabled
-  ['btn-upload','btn-sign','btn-transmit','btn-modify','btn-verify']
-    .forEach(id => setBtn(id, false));
+  ['btn-sign','btn-transmit','btn-modify','btn-verify'].forEach(id => setBtn(id, false));
+  setPipeline('idle');
+  // Guard upload label — requires keys to be generated first
+  const uploadLabel = document.getElementById('btn-upload-label');
+  if (uploadLabel) {
+    uploadLabel.addEventListener('click', e => {
+      if (!document.querySelector('.key-status-pill.ready')) {
+        e.preventDefault();
+        alert('⚠️ Please generate RSA-2048 keys first.');
+      }
+    });
+  }
 });
+
