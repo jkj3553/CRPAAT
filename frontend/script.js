@@ -117,21 +117,22 @@ async function generateKeypair() {
 }
 
 // ── File Select ──────────────────────────────────────────────────────────────
-function onFileSelect(event) {
+async function onFileSelect(event) {
   const file = event.target.files[0];
   if (!file) return;
   session.selectedFile = file;
-  document.getElementById('file-label-text').textContent = file.name;
-  document.getElementById('file-upload-label').style.borderColor = 'var(--cyan)';
-  document.getElementById('file-upload-label').style.color = 'var(--cyan)';
-  setBtn('btn-upload', true);
+  
+  // With the new layout, the upload button is the label itself.
+  // We automatically trigger the upload once a file is selected.
+  await uploadDocument();
 }
 
 // ── API 1: Upload ────────────────────────────────────────────────────────────
 async function uploadDocument() {
   if (!session.selectedFile) return;
-  const btn = document.getElementById('btn-upload');
-  btn.disabled = true;
+  
+  const btn = document.getElementById('btn-upload-label');
+  btn.style.pointerEvents = 'none'; // disable clicks during upload
   btn.innerHTML = '<span>⏳</span> Uploading…';
 
   const form = new FormData();
@@ -161,8 +162,8 @@ async function uploadDocument() {
     btn.innerHTML = '<span>✅</span> Uploaded';
     btn.style.background = 'linear-gradient(135deg,#00aa44,#007733)';
   } catch (err) {
-    btn.disabled = false;
-    btn.innerHTML = '<span>⬆️</span> Upload';
+    btn.style.pointerEvents = 'auto';
+    btn.innerHTML = '<span>📂</span> Upload Document';
     alert('❌ Upload failed.\n\n' + err.message);
   }
 }

@@ -6,8 +6,8 @@ const ctrl    = require('../controllers/signatureController');
 const router = express.Router();
 
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, '../../uploads'),
-  filename: () => 'original.txt',
+  destination: path.join(__dirname, '..', 'uploads'),
+  filename: (req, file, cb) => cb(null, 'original.txt'),
 });
 const upload = multer({ storage });
 
