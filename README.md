@@ -1,84 +1,125 @@
-# CRP_AAT: RSA Digital Signature System
+# Digital Signature Integrity Platform (OpenSSL Edition)
 
 ## Project Overview
-This project is a complete, educational demonstration of an RSA Digital Signature system built from scratch. Designed for a college cybersecurity assignment (CRPAAT), the objective is to illustrate the end-to-end workflow of digital signatures—including key generation, document signing, signature verification, and tamper detection—without relying on external cryptographic libraries for the core mathematical operations.
+This project is an advanced, educational cybersecurity simulation platform designed to visually demonstrate the end-to-end mechanics of **RSA Digital Signatures** using industry-standard **OpenSSL** as the core cryptographic engine. 
 
-## Technology Stack & Architecture
+The application is structured to teach students and security practitioners three fundamental tenets of security architecture:
+1. **Authenticity**: Confirming that a document originated from the genuine sender (Alice).
+2. **Integrity**: Mathematically proving that a document has not been altered in transit.
+3. **Non-Repudiation**: Ensuring the signer cannot deny having signed the message.
 
-### 1. Core Cryptographic Engine (Backend)
-- **Language**: C++
-- **Why C++?**: C++ was chosen for the core engine to satisfy the strict academic "no library" requirement. It allows for low-level memory control and high-performance execution of intensive mathematical operations (like modular exponentiation and large number arithmetic).
-- **Modules**:
-  - `prime.cpp` & `gcd.cpp`: Handles prime number generation and Greatest Common Divisor calculations (using the Euclidean algorithm).
-  - `mod_arith.cpp`: Implements the Extended Euclidean Algorithm for modular inverses and modular exponentiation.
-  - `keygen.cpp`: Orchestrates the generation of the public ($e, n$) and private ($d, n$) key pairs.
-  - `hash.cpp`: Provides a custom string hashing algorithm to map documents to integer hashes.
-  - `signature.cpp` & `verify.cpp`: Implements the core RSA formulas for signing ($S = H^d \pmod n$) and verifying ($H = S^e \pmod n$).
+---
 
-### 2. Web Server (Middleware)
-- **Language**: Python (Flask Framework)
-- **Why Python?**: Python and Flask provide a lightweight, highly readable, and rapid way to stand up a RESTful API. The server acts as a bridge, accepting HTTP requests from the frontend, securely invoking the compiled C++ binary via `subprocess`, and returning the JSON results.
-- **Module**:
-  - `app.py`: Defines the `/api/keygen`, `/api/sign`, and `/api/verify` endpoints.
+## Architectural Layout & Storyline
 
-### 3. User Interface (Frontend)
-- **Language**: HTML, CSS (Vanilla), JavaScript
-- **Why this stack?**: Vanilla web technologies ensure a fast, dependency-free, and accessible application. The UI is designed to be responsive, interactive, and educational, allowing users to physically see the keys, hashes, and signatures change in real-time.
-- **Modules**:
-  - `index.html`: The structural layout of the application.
-  - `style.css`: Modern, glassmorphism-inspired styling with status indicators.
-  - `script.js`: Manages session state, handles API calls to the Flask backend, and drives the interactive tamper detection demonstrations.
+Unlike generic file-upload applications, this is a live visualization of a **Man-in-the-Middle (MitM) Attack Simulation** mapped to a state-of-the-art glassmorphism dashboard.
 
-## How the Cryptography Works
-
-Digital signatures guarantee **Authenticity** and **Integrity**. This project uses the RSA algorithm to achieve this:
-
-1. **Key Generation**: 
-   - Generates two prime numbers $p$ and $q$.
-   - Computes the modulus $n = p \times q$ and the totient $\phi(n) = (p-1)(q-1)$.
-   - Selects a public exponent $e$ that is coprime to $\phi(n)$.
-   - Computes the private exponent $d$ (the modular inverse of $e \pmod{\phi(n)}$).
-2. **Signing a Document**:
-   - The document (string) is passed through a custom **Hash Function** to generate a unique integer representation $H$.
-   - The hash is encrypted using the private key: $S = H^d \pmod n$. This resulting $S$ is the **Digital Signature**.
-3. **Verification**:
-   - The receiver takes the Signature $S$ and decrypts it using the sender's public key: $H' = S^e \pmod n$.
-   - The receiver independently hashes the received document to get $H$.
-   - If $H' == H$, the signature is **VALID**. The document has not been tampered with.
-
-### Real-Life Application
-In the real world, digital signatures are the backbone of secure internet communications (HTTPS/TLS), software distribution (verifying app updates), financial transactions, and legally binding digital contracts (like DocuSign). If a malicious actor alters a signed contract (e.g., changing a payout amount), the hash of the tampered document will completely change. When the verifier runs the math, the hashes will mismatch, instantly exposing the forgery—a scenario beautifully demonstrated in the **Tamper Demo** section of this project.
-
-## Project Structure
 ```text
-CRPAAT/
-├── backend/          # C++ Cryptographic Engine
-│   ├── main.cpp      # CLI Entry point for the engine
-│   ├── keygen.cpp/h  # RSA Key pair generation
-│   ├── signature...  # Signing logic
-│   ├── verify...     # Verification logic
-│   ├── prime/gcd...  # Math utilities
-│   └── hash.cpp/h    # Custom hashing algorithm
-├── server/           # Python Middleware
-│   └── app.py        # Flask REST API
-├── frontend/         # User Interface
-│   ├── index.html    # Web layout
-│   ├── style.css     # UI Styling
-│   └── script.js     # API interaction and DOM manipulation
-├── Makefile          # Build instructions for C++ backend
-└── .gitignore        # Git ignore rules
+       ┌───────────┐      Encrypted Channel      ┌─────────┐
+       │   Alice   ├────────────────────────────>│   Bob   │
+       │ (Signer)  │              │              │ (Verify)│
+       └───────────┘              │              └─────────┘
+                                  ▼
+                            ┌───────────┐
+                            │ Adversary │
+                            │   (MitM)  │
+                            └───────────┘
 ```
 
-## How to Run
+1. **Alice (Sender / Signer)**: 
+   - Uploads a raw document.
+   - Generates a SHA-256 hash using OpenSSL.
+   - Signs the hash using her private RSA-2048 key.
+2. **Adversary (Man-in-the-Middle)**: 
+   - Intercepts the document silently from the communication line.
+   - Modifies the text payload in a glassmorphic terminal emulator.
+   - Relays the altered document to Bob. Note that no network alarm is triggered yet, modeling stealth attacks!
+3. **Bob (Receiver / Verifier)**:
+   - Receives the payload and signature.
+   - Runs Bob's verification button which triggers the OpenSSL cryptographic verdict.
+   - If the adversary tampered with the document, OpenSSL exposes the signature failure, instantly flashing red threat channels across the platform.
 
-1. **Compile the Backend Engine**
-   ```bash
-   make
-   ```
-2. **Start the Flask Server**
-   ```bash
-   cd server
-   python3 app.py
-   ```
-3. **Use the Application**
-   Open your browser and navigate to `http://localhost:5000` to interact with the RSA Digital Signature system.
+---
+
+## Technical Stack
+
+* **Frontend**: Responsive Single Page App (SPA) built with HTML, Vanilla CSS, and modern interactive JavaScript. Styled with glassmorphism overlays, real-time glowing pipelines, status indicators, and terminal animations.
+* **Server**: Lightweight Node.js/Express web server acting as a secure REST API middleware.
+* **Cryptographic Engine**: Native **OpenSSL (3.x)** command-line executable invoked securely from the server runtime.
+
+---
+
+## How the Cryptography Works (OpenSSL Commands under the Hood)
+
+The REST API coordinates the following real-world shell-equivalent commands to perform raw operations:
+
+### 1. RSA-2048 Key Generation
+Generates a highly secure private RSA key and extracts its public counterpart:
+```bash
+# Generate the 2048-bit private key
+openssl genrsa -out server/keys/private.pem 2048
+
+# Extract the public key in PEM format
+openssl rsa -in server/keys/private.pem -pubout -out server/keys/public.pem
+```
+
+### 2. SHA-256 Hashing
+Maps arbitrary-length document bytes to a fixed 256-bit hexadecimal string representation:
+```bash
+openssl dgst -sha256 server/uploads/original.txt
+```
+
+### 3. Creating the Digital Signature
+Computes the SHA-256 hash of the uploaded document and signs it with Alice's private key:
+```bash
+openssl dgst -sha256 -sign server/keys/private.pem -out server/signatures/document.sig server/uploads/original.txt
+```
+
+### 4. Recipient Cryptographic Verification
+Verifies the signature against the target file (either original or tampered) using Alice's public key:
+```bash
+openssl dgst -sha256 -verify server/keys/public.pem -signature server/signatures/document.sig server/uploads/original.txt
+```
+* **Success Output**: `Verified OK`
+* **Failure Output**: `Verification Failure` / non-zero exit code.
+
+---
+
+## Secure Software Engineering Highlights (Professor-Proof Features)
+
+* **Immunized Against Command Injection**:  
+  Rather than using traditional string-concatenated shell executors (`child_process.execSync`) which are highly vulnerable to input injection vectors, this server utilizes safe child process argument execution:
+  ```javascript
+  const { execFileSync } = require('child_process');
+  execFileSync('openssl', ['dgst', '-sha256', '-verify', PUBLIC_KEY, ...]);
+  ```
+  This guarantees that arguments bypass the system shell interpreter completely, making shell command injection mathematically impossible.
+* **Multi-Step Animation Pipeline**:  
+  Alice's signature box separates the **Hashing** phase (yellow `#️⃣` state) from the **Signing** phase (green `🔒` state) dynamically, explaining the physical mathematical progression to students.
+
+---
+
+## Setup & Running the Platform
+
+### Prerequisites
+* **Node.js** (v16+)
+* **OpenSSL** installed and available in your system path.
+
+### 1. Installation
+Navigate to the `server/` directory and install the required dependencies:
+```bash
+cd server
+npm install
+```
+
+### 2. Running in Development Mode
+Start the Node.js server with nodemon for automatic file tracking:
+```bash
+npm run dev
+```
+
+### 3. Access the Dashboard
+Open your web browser of choice and go to:
+```text
+http://localhost:3000
+```

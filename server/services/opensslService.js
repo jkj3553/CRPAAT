@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -17,13 +17,17 @@ const SIG_FILE    = path.join(SIGS_DIR, 'document.sig');
 const ORIG_FILE   = path.join(UPLOADS_DIR, 'original.txt');
 const TAMPERED_FILE = path.join(UPLOADS_DIR, 'tampered.txt');
 
-function run(cmd) {
-  return execSync(cmd, { encoding: 'utf8' }).trim();
+/**
+ * Execute OpenSSL safely using child_process.execFileSync
+ * Bypasses the shell interpreter entirely, rendering command injection impossible.
+ */
+function runOpenSsl(args) {
+  return execFileSync('openssl', args, { encoding: 'utf8' }).trim();
 }
 
 function generateKeypair() {
-  run(`openssl genrsa -out "${PRIVATE_KEY}" 2048`);
-  run(`openssl rsa -in "${PRIVATE_KEY}" -pubout -out "${PUBLIC_KEY}"`);
+  runOpenSsl(['genrsa', '-out', PRIVATE_KEY, '2048']);
+  runOpenSsl(['rsa', '-in', PRIVATE_KEY, '-pubout', '-out', PUBLIC_KEY]);
 
   // Extract a fingerprint: first 40 base64 chars of public key body
   const pemLines = fs.readFileSync(PUBLIC_KEY, 'utf8').split('\n');
@@ -34,13 +38,13 @@ function generateKeypair() {
 }
 
 function hashFile(filePath) {
-  const output = run(`openssl dgst -sha256 "${filePath}"`);
+  const output = runOpenSsl(['dgst', '-sha256', filePath]);
   // Output format: SHA2-256(file.txt)= abc123...
   return output.split('=').pop().trim();
 }
 
 function signFile() {
-  run(`openssl dgst -sha256 -sign "${PRIVATE_KEY}" -out "${SIG_FILE}" "${ORIG_FILE}"`);
+  runOpenSsl(['dgst', '-sha256', '-sign', PRIVATE_KEY, '-out', SIG_FILE, ORIG_FILE]);
 }
 
 function createTamperedFile(customContent) {
@@ -65,12 +69,18 @@ function verifyFile(useTampered) {
 
   let openSslResult;
   try {
-    openSslResult = run(
-      `openssl dgst -sha256 -verify "${PUBLIC_KEY}" -signature "${SIG_FILE}" "${targetFile}"`
-    );
+    openSslResult = runOpenSsl([
+      'dgst',
+      '-sha256',
+      '-verify',
+      PUBLIC_KEY,
+      '-signature',
+      SIG_FILE,
+      targetFile
+    ]);
   } catch (e) {
-    // openssl exits with code 1 on failure — execSync throws
-    openSslResult = e.stdout ? e.stdout.trim() : 'Verification Failure';
+    // openssl exits with code 1 on verification failure — execFileSync throws
+    openSslResult = e.stdout ? e.stdout.trim() : (e.stderr ? e.stderr.trim() : 'Verification Failure');
   }
 
   const originalHash = hashFile(ORIG_FILE);
