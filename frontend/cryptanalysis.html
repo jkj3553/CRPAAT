@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cryptanalysis Lab // CYPHR_CORE</title>
+  <meta name="description" content="Avalanche Effect Analyzer for cryptographic hashes." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="cryptanalysis.css" />
+</head>
+<body>
+  <div class="clab-wrapper">
+    <!-- HEADER BAR -->
+    <header class="clab-header">
+      <a href="/" class="clab-back-link">← Signature Workspace</a>
+      <span class="clab-title">CRYPTANALYSIS_LAB</span>
+      <span class="clab-subtitle" id="clab-subtitle">Avalanche Effect Analyzer · SHA-256</span>
+    </header>
+<div class="clab-tabs">
+      <button class="clab-tab-btn active" id="tab-btn-avalanche" onclick="switchModule('avalanche')">
+        1. Avalanche Effect Analysis
+      </button>
+      <button class="clab-tab-btn" id="tab-btn-attack" onclick="switchModule('attack')">
+        2. Digital Signature Attack Analysis
+      </button>
+    </div>
+
+    <div class="clab-module-content" id="module-avalanche">
+      <main class="clab-main">
+        <!-- LEFT COLUMN: inputs -->
+        <section class="clab-input-panel">
+          <div class="clab-field">
+            <label class="clab-label">Original Message</label>
+            <textarea id="input-original" class="clab-textarea" 
+                      placeholder="Transfer ₹1000 to Bob">Transfer ₹1000 to Bob</textarea>
+          </div>
+          <div class="clab-field">
+            <label class="clab-label">Modified Message</label>
+            <textarea id="input-modified" class="clab-textarea"
+                      placeholder="Modify one character...">Transfer ₹1001 to Bob</textarea>
+          </div>
+          <button id="btn-analyze" class="clab-btn-analyze" onclick="runAnalysis()">
+            Analyze Avalanche Effect
+          </button>
+          <div id="clab-error" class="clab-error hidden"></div>
+        </section>
+        <!-- RIGHT COLUMN: results -->
+        <section class="clab-results-panel" id="results-panel">
+          <!-- Placeholder state (shown before first analysis) -->
+          <div class="clab-placeholder" id="results-placeholder">
+            <span class="clab-placeholder-text">Results appear here after analysis</span>
+          </div>
+          <!-- Results (hidden until first analysis) -->
+          <div id="results-content" class="hidden">
+            <!-- Hash display -->
+            <div class="clab-hash-grid">
+              <div class="clab-hash-card">
+                <div class="clab-hash-label">Original SHA-256</div>
+                <code class="clab-hash-value" id="res-hashA">—</code>
+              </div>
+              <div class="clab-hash-card">
+                <div class="clab-hash-label">Modified SHA-256</div>
+                <code class="clab-hash-value" id="res-hashB">—</code>
+              </div>
+            </div>
+            <!-- Stats row -->
+            <div class="clab-stats-grid">
+              <div class="clab-stat">
+                <div class="clab-stat-value" id="res-charDiff">—</div>
+                <div class="clab-stat-label">Character Changes</div>
+              </div>
+              <div class="clab-stat">
+                <div class="clab-stat-value" id="res-bitDiff">—</div>
+                <div class="clab-stat-label">Hash Bit Difference</div>
+              </div>
+              <div class="clab-stat">
+                <div class="clab-stat-value" id="res-pct">—</div>
+                <div class="clab-stat-label">Percentage Difference</div>
+              </div>
+            </div>
+            <!-- Progress bar -->
+            <div class="clab-bar-section">
+              <div class="clab-bar-label">
+                Bit Diffusion
+                <span id="res-bar-pct">0%</span>
+              </div>
+              <div class="clab-bar-track">
+                <div class="clab-bar-fill" id="res-bar-fill" style="width: 0%"></div>
+              </div>
+            </div>
+            <!-- Verdict -->
+            <div class="clab-verdict" id="res-verdict-box">
+              <div class="clab-verdict-label">Verdict</div>
+              <div class="clab-verdict-value" id="res-verdict">—</div>
+            </div>
+            <!-- Security discussion (always visible after first run) -->
+            <div class="clab-discussion">
+              <div class="clab-discussion-title">Security Analysis</div>
+              <ul class="clab-discussion-list">
+                <li><strong>Assumption:</strong> SHA-256 exhibits strong diffusion — small input changes produce unpredictable output changes.</li>
+                <li><strong>Attacker goal:</strong> Modify a document while preserving its hash to bypass signature verification.</li>
+                <li><strong>Outcome:</strong> The avalanche effect makes controlled hash manipulation computationally infeasible. No practical attack on SHA-256 is currently known.</li>
+                <li><strong>Relevance:</strong> Since RSA signatures are computed over the hash, any document modification invalidates the signature — as demonstrated in the Signature Workspace.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="clab-module-content hidden" id="module-attack">
+      <main class="clab-main">
+        <!-- LEFT PANEL: Attack Configuration -->
+        <section class="clab-input-panel">
+          <div class="clab-field">
+            <label class="clab-label">Target Message (Readonly)</label>
+            <textarea id="attack-target-message" class="clab-textarea" readonly>Transfer ₹1000 to Bob</textarea>
+          </div>
+
+          <div class="clab-field">
+            <label class="clab-label">Attack Type</label>
+            <select id="attack-type-select" class="clab-select" onchange="handleAttackTypeChange()">
+              <option value="random_signature">Random Signature Attack</option>
+              <option value="wrong_key">Wrong Key Attack</option>
+              <option value="private_key_compromise">Private Key Compromise</option>
+            </select>
+          </div>
+
+          <button id="btn-attempt-attack" class="clab-btn-analyze" onclick="executeAttack()">
+            Attempt Attack
+          </button>
+
+          <div id="attack-error" class="clab-error hidden"></div>
+        </section>
+
+        <!-- RIGHT PANEL: Analysis Results -->
+        <section class="clab-results-panel">
+          <!-- Placeholder -->
+          <div class="clab-placeholder" id="attack-results-placeholder">
+            <span class="clab-placeholder-text">Configure an attack and click "Attempt Attack" to begin</span>
+          </div>
+
+          <!-- Results Display (Hidden Initially) -->
+          <div id="attack-results-content" class="hidden">
+            <div class="attack-result-header">
+              <h2 id="res-attack-name" class="clab-title">—</h2>
+              <span id="res-attack-badge" class="status-badge">—</span>
+            </div>
+
+            <div class="clab-hash-card">
+              <div class="clab-hash-label">Attack Goal</div>
+              <p class="clab-panel-text" id="res-attack-goal">—</p>
+            </div>
+
+            <div class="clab-hash-card">
+              <div class="clab-hash-label">Verification Outcome</div>
+              <code class="clab-hash-value" id="res-attack-outcome">—</code>
+            </div>
+
+            <div class="clab-hash-card">
+              <div class="clab-hash-label">Generated Signature Hex</div>
+              <code class="clab-hash-value" id="res-attack-sig">—</code>
+            </div>
+
+            <!-- Flow Visual for Private Key Compromise -->
+            <div id="compromise-visual" class="compromise-flow hidden">
+              <div class="flow-step">
+                <div class="step-label">Attacker</div>
+                <div class="step-sub">Stole Alice's key</div>
+              </div>
+              <div class="flow-arrow">▼</div>
+              <div class="flow-step">
+                <div class="step-label">Alice's Private Key</div>
+                <div class="step-sub">Used for signing</div>
+              </div>
+              <div class="flow-arrow">▼</div>
+              <div class="flow-step">
+                <div class="step-label">Fraudulent Message</div>
+                <div class="step-sub">₹500,000 to Attacker</div>
+              </div>
+              <div class="flow-arrow">▼</div>
+              <div class="flow-step highlight-success">
+                <div class="step-label">Bob's Verification</div>
+                <div class="step-sub">VERIFIED OK</div>
+              </div>
+            </div>
+
+            <div class="clab-discussion">
+              <div class="clab-discussion-title">Security Discussion</div>
+              <ul class="clab-discussion-list">
+                <li id="res-attack-security-note">—</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- SUMMARY DASHBOARD (Persistent after first run) -->
+          <div id="attack-dashboard" class="attack-dashboard hidden">
+            <h3 class="dashboard-title">Session Attack Summary</h3>
+            <table class="dashboard-table">
+              <thead>
+                <tr>
+                  <th>Attack Scenario</th>
+                  <th>Outcome</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr id="row-random">
+                  <td>Random Signature Attack</td>
+                  <td class="dash-status">Pending</td>
+                </tr>
+                <tr id="row-wrong">
+                  <td>Wrong Key Attack</td>
+                  <td class="dash-status">Pending</td>
+                </tr>
+                <tr id="row-compromise">
+                  <td>Private Key Compromise</td>
+                  <td class="dash-status">Pending</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="dashboard-footer">
+              <span id="dash-blocked-count">0/3 attacks blocked</span>
+              <span class="warning-alert">⚠️ Critical Assumption: Private key secrecy must be maintained.</span>
+            </div>
+          </div>
+
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="cryptanalysis.js"></script>
+</body>
+</html>

@@ -93,7 +93,7 @@ function truncateHash(hash, n = 16) {
 async function generateKeypair() {
   const btn = document.getElementById('btn-keygen');
   btn.disabled = true;
-  btn.innerHTML = '<span class="btn-icon">⏳</span> Generating…';
+  btn.innerHTML = 'Generating…';
 
   try {
     const res  = await fetch('/api/generate-keypair', { method: 'POST' });
@@ -102,7 +102,7 @@ async function generateKeypair() {
 
     document.getElementById('pub-fingerprint').textContent = data.fingerprint;
     document.getElementById('keygen-result').classList.remove('hidden');
-    btn.innerHTML = '<span class="btn-icon">✅</span> Keys Generated';
+    btn.innerHTML = 'Keys Generated';
     btn.style.background = 'none';
     btn.style.borderColor = 'var(--emerald)';
     btn.style.color = 'var(--emerald)';
@@ -114,8 +114,8 @@ async function generateKeypair() {
     setBtn('btn-upload', false); // will enable after file select
   } catch (err) {
     btn.disabled = false;
-    btn.innerHTML = '<span class="btn-icon">⚡</span> Generate RSA-2048 Key Pair';
-    alert('❌ Key generation failed.\n\n' + err.message);
+    btn.innerHTML = 'Generate RSA-2048 Key Pair';
+    alert('Key generation failed.\n\n' + err.message);
   }
 }
 
@@ -136,7 +136,7 @@ async function uploadDocument() {
   
   const btn = document.getElementById('btn-upload-label');
   btn.style.pointerEvents = 'none'; // disable clicks during upload
-  btn.innerHTML = '<span>⏳</span> Uploading…';
+  btn.innerHTML = 'Uploading…';
 
   const form = new FormData();
   form.append('document', session.selectedFile);
@@ -162,14 +162,14 @@ async function uploadDocument() {
       setBtn('btn-sign', true);
     }, 800);
 
-    btn.innerHTML = '<span>✅</span> Uploaded';
+    btn.innerHTML = 'Uploaded';
     btn.style.background = 'none';
     btn.style.borderColor = 'var(--emerald)';
     btn.style.color = 'var(--emerald)';
   } catch (err) {
     btn.style.pointerEvents = 'auto';
-    btn.innerHTML = '<span>📂</span> Upload Document';
-    alert('❌ Upload failed.\n\n' + err.message);
+    btn.innerHTML = 'Upload Document';
+    alert('Upload failed.\n\n' + err.message);
   }
 }
 
@@ -177,7 +177,7 @@ async function uploadDocument() {
 async function signDocument() {
   const btn = document.getElementById('btn-sign');
   btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span> Hashing Document…';
+  btn.innerHTML = 'Hashing Document…';
 
   try {
     const res  = await fetch('/api/sign', { method: 'POST' });
@@ -186,17 +186,17 @@ async function signDocument() {
 
     // Phase 1: Glow Yellow and show Hash Symbol Hashing
     setIconBox('alice-sig-box', 'hash', 'SHA-256 Hash...');
-    document.getElementById('alice-sig-icon').textContent = '#️⃣';
+    document.getElementById('alice-sig-icon').textContent = '#';
 
     // Visual pause representing hashing to signature processing
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     session.signed = true;
-    btn.innerHTML = '<span>⏳</span> Signing Hash…';
+    btn.innerHTML = 'Signing Hash…';
 
     // Phase 2: Glow Green and transition to Signature Symbol
-    setIconBox('alice-sig-box', 'done', 'Signed ✓');
-    document.getElementById('alice-sig-icon').textContent = '🔒';
+    setIconBox('alice-sig-box', 'done', 'Signed');
+    document.getElementById('alice-sig-icon').innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>`;
 
     setTimelineStep('sign', 'done');
     setConnector(2, 'done');
@@ -204,14 +204,14 @@ async function signDocument() {
     setTimelineStep('transmit', 'active');
     setBtn('btn-transmit', true);
 
-    btn.innerHTML = '<span>✅</span> Signed';
+    btn.innerHTML = 'Signed';
     btn.style.background = 'none';
     btn.style.borderColor = 'var(--emerald)';
     btn.style.color = 'var(--emerald)';
   } catch (err) {
     btn.disabled = false;
-    btn.innerHTML = '<span>✍️</span> Sign Document';
-    alert('❌ Signing failed.\n\n' + err.message);
+    btn.innerHTML = 'Sign Document';
+    alert('Signing failed.\n\n' + err.message);
   }
 }
 
@@ -219,7 +219,7 @@ async function signDocument() {
 async function transmitDocument() {
   const btn = document.getElementById('btn-transmit');
   btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span> Transmitting…';
+  btn.innerHTML = 'Transmitting…';
 
   try {
     const res  = await fetch('/api/transmit', { method: 'POST' });
@@ -245,14 +245,14 @@ async function transmitDocument() {
     setBtn('btn-modify', true);
     setBtn('btn-verify', true);
 
-    btn.innerHTML = '<span>✅</span> Transmitted';
+    btn.innerHTML = 'Transmitted';
     btn.style.background = 'none';
     btn.style.borderColor = 'var(--emerald)';
     btn.style.color = 'var(--emerald)';
   } catch (err) {
     btn.disabled = false;
-    btn.innerHTML = '<span>📡</span> Transmit';
-    alert('❌ Transmit failed.\n\n' + err.message);
+    btn.innerHTML = 'Transmit';
+    alert('Transmit failed.\n\n' + err.message);
   }
 }
 
@@ -261,14 +261,14 @@ function closeTamperModal() {
   document.getElementById('tamper-modal').classList.add('hidden');
   const btn = document.getElementById('btn-modify');
   btn.disabled = false;
-  btn.innerHTML = '<span>✂️</span> Modify Document';
+  btn.innerHTML = 'Modify Document';
 }
 
 // ── API 4: Modify ────────────────────────────────────────────────────────────
 async function modifyDocument() {
   const btn = document.getElementById('btn-modify');
   btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span> Intercepting…';
+  btn.innerHTML = 'Intercepting…';
 
   try {
     // Fetch state to get the original file content
@@ -284,8 +284,8 @@ async function modifyDocument() {
     document.getElementById('tamper-modal').classList.remove('hidden');
   } catch (err) {
     btn.disabled = false;
-    btn.innerHTML = '<span>✂️</span> Modify Document';
-    alert('❌ Interception failed.\n\n' + err.message);
+    btn.innerHTML = 'Modify Document';
+    alert('Interception failed.\n\n' + err.message);
   }
 }
 
@@ -294,7 +294,7 @@ async function submitTamperPayload() {
   const modalText = document.getElementById('modal-tamper-text').value;
 
   document.getElementById('tamper-modal').classList.add('hidden');
-  btn.innerHTML = '<span>⏳</span> Modifying…';
+  btn.innerHTML = 'Modifying…';
 
   try {
     const res  = await fetch('/api/modify', {
@@ -324,14 +324,26 @@ async function submitTamperPayload() {
     // Always ensure Verify button is unlocked/accessible for repetitive runs
     setBtn('btn-verify', true);
 
-    btn.innerHTML = '<span>✅</span> Modified';
+    btn.innerHTML = 'Modified';
     btn.style.background = 'none';
     btn.style.borderColor = 'var(--red)';
     btn.style.color = 'var(--red)';
     btn.disabled = false; // Allow modifying it again!
+
+    // Adversary card turns red immediately on successful tamper
+    const advCard = document.getElementById('adversary-card');
+    const tsb     = document.getElementById('tamper-status-box');
+    const advDot  = document.getElementById('adv-dot');
+    advCard.classList.add('threat-active');
+    tsb.classList.remove('hidden');
+    tsb.className = 'tamper-status-box threat';
+    advDot.classList.add('active');
+    const secureLabel = document.getElementById('adversary-secure-text');
+    secureLabel.textContent = 'Document tampered — awaiting Bob\'s verification';
+    secureLabel.style.color = 'var(--red)';
   } catch (err) {
     btn.disabled = false;
-    btn.innerHTML = '<span>✂️</span> Modify Document';
+    btn.innerHTML = 'Modify Document';
   }
 }
 
@@ -339,7 +351,7 @@ async function submitTamperPayload() {
 async function verifyDocument() {
   const btn = document.getElementById('btn-verify');
   btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span> Verifying…';
+  btn.innerHTML = 'Verifying…';
 
   try {
     const res  = await fetch('/api/verify', { method: 'POST' });
@@ -357,18 +369,20 @@ async function verifyDocument() {
     const advDot = document.getElementById('adv-dot');
 
     if (data.isValid) {
-      // 🛡️ Authentic State
+      // Authentic State
       setPipeline('flow');
       
       // Bob card statuses
-      setIconBox('bob-doc-box', 'done', 'Authentic ✓');
-      setIconBox('bob-sig-box', 'done', 'Valid ✓');
+      setIconBox('bob-doc-box', 'done', 'Authentic');
+      setIconBox('bob-sig-box', 'done', 'Valid');
 
       // Deactivate adversary threat highlights
       advCard.classList.remove('threat-active');
-      tsb.className = 'tamper-status-box';
-      document.getElementById('tsb-text').textContent = '🛡️ SYSTEM SECURE';
+      tsb.className = 'tamper-status-box hidden';
       advDot.classList.remove('active');
+      const secureLabelValid = document.getElementById('adversary-secure-text');
+      secureLabelValid.textContent = 'Channel secure – no tampering detected';
+      secureLabelValid.style.color = '';
 
       // Timeline success
       setTimelineStep('modify', 'done');
@@ -380,13 +394,12 @@ async function verifyDocument() {
       setPipeline('threat');
 
       // Bob card statuses
-      setIconBox('bob-doc-box', 'threat', 'Tampered ⚠');
-      setIconBox('bob-sig-box', 'threat', 'INVALID ❌');
+      setIconBox('bob-doc-box', 'threat', 'Tampered');
+      setIconBox('bob-sig-box', 'threat', 'INVALID');
 
       // Activate adversary threat highlights
       advCard.classList.add('threat-active');
       tsb.className = 'tamper-status-box threat';
-      document.getElementById('tsb-text').textContent = '⚠️ TAMPERING ACTIVE';
       advDot.classList.add('active');
 
       // Timeline threat
@@ -401,7 +414,7 @@ async function verifyDocument() {
     banner.style.background   = data.isValid ? 'rgba(0,255,136,0.08)' : 'rgba(255,68,68,0.1)';
     banner.style.borderColor  = data.isValid ? 'rgba(0,255,136,0.3)'  : 'rgba(255,68,68,0.4)';
     banner.style.color        = data.isValid ? 'var(--green)'         : 'var(--red)';
-    banner.textContent        = data.isValid ? '✅ Signature Valid — Document Authentic' : '❌ Signature Invalid — Document Tampered';
+    banner.textContent        = data.isValid ? 'Signature Valid — Document Authentic' : 'Signature Invalid — Document Tampered';
     document.getElementById('bob-result').classList.remove('hidden');
 
     // Build report
@@ -409,14 +422,14 @@ async function verifyDocument() {
 
     // Keep the Verify button enabled and accessible for repetitive testing
     btn.disabled = false;
-    btn.innerHTML = '<span>🔍</span> Verify Signature';
+    btn.innerHTML = 'Verify Signature';
     btn.style.background = 'none';
     btn.style.borderColor = data.isValid ? 'var(--emerald)' : 'var(--red)';
     btn.style.color = data.isValid ? 'var(--emerald)' : 'var(--red)';
   } catch (err) {
     btn.disabled = false;
-    btn.innerHTML = '<span>🔍</span> Verify Signature';
-    alert('❌ Verification failed.\n\n' + err.message);
+    btn.innerHTML = 'Verify Signature';
+    alert('Verification failed.\n\n' + err.message);
   }
 }
 
@@ -448,10 +461,10 @@ function buildReport(data) {
   // Final verdict
   const statusEl = document.getElementById('verdict-status');
   if (data.isValid) {
-    statusEl.textContent = '✅ INTEGRITY VERIFIED — Document is Authentic and Unmodified';
+    statusEl.textContent = 'INTEGRITY VERIFIED — Document is Authentic and Unmodified';
     statusEl.className   = 'status valid';
   } else {
-    statusEl.textContent = '🚨 INTEGRITY BREACH — Document was Modified After Signing';
+    statusEl.textContent = 'INTEGRITY BREACH — Document was Modified After Signing';
     statusEl.className   = 'status invalid';
   }
 

@@ -6,45 +6,68 @@ const KEYS_DIR       = path.join(__dirname, '..', 'keys');
 const UPLOADS_DIR    = path.join(__dirname, '..', 'uploads');
 const SIGS_DIR       = path.join(__dirname, '..', 'signatures');
 
-// Ensure directories exist
 [KEYS_DIR, UPLOADS_DIR, SIGS_DIR].forEach(d => {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
 
-const PRIVATE_KEY = path.join(KEYS_DIR, 'private.pem');
-const PUBLIC_KEY  = path.join(KEYS_DIR, 'public.pem');
+const ALICE_PRIVATE_KEY = path.join(KEYS_DIR, 'alice_private.pem');
+const ALICE_PUBLIC_KEY  = path.join(KEYS_DIR, 'alice_public.pem');
+const MALLORY_PRIVATE_KEY = path.join(KEYS_DIR, 'mallory_private.pem');
+const MALLORY_PUBLIC_KEY  = path.join(KEYS_DIR, 'mallory_public.pem');
 const SIG_FILE    = path.join(SIGS_DIR, 'document.sig');
 const ORIG_FILE   = path.join(UPLOADS_DIR, 'original.txt');
 const TAMPERED_FILE = path.join(UPLOADS_DIR, 'tampered.txt');
 
-/**
- * Execute OpenSSL safely using child_process.execFileSync
- * Bypasses the shell interpreter entirely, rendering command injection impossible.
- */
 function runOpenSsl(args) {
   return execFileSync('openssl', args, { encoding: 'utf8' }).trim();
 }
 
-function generateKeypair() {
-  runOpenSsl(['genrsa', '-out', PRIVATE_KEY, '2048']);
-  runOpenSsl(['rsa', '-in', PRIVATE_KEY, '-pubout', '-out', PUBLIC_KEY]);
+function migrateLegacyAliceKeys() {
+  const legacyPrivate = path.join(KEYS_DIR, 'private.pem');
+  const legacyPublic = path.join(KEYS_DIR, 'public.pem');
+  if (fs.existsSync(legacyPrivate) && !fs.existsSync(ALICE_PRIVATE_KEY)) {
+    fs.renameSync(legacyPrivate, ALICE_PRIVATE_KEY);
+  }
+  if (fs.existsSync(legacyPublic) && !fs.existsSync(ALICE_PUBLIC_KEY)) {
+    fs.renameSync(legacyPublic, ALICE_PUBLIC_KEY);
+  }
+}
 
-  // Extract a fingerprint: first 40 base64 chars of public key body
-  const pemLines = fs.readFileSync(PUBLIC_KEY, 'utf8').split('\n');
+function ensureAliceKeypair() {
+  migrateLegacyAliceKeys();
+  if (!fs.existsSync(ALICE_PRIVATE_KEY)) {
+    runOpenSsl(['genrsa', '-out', ALICE_PRIVATE_KEY, '2048']);
+    runOpenSsl(['rsa', '-in', ALICE_PRIVATE_KEY, '-pubout', '-out', ALICE_PUBLIC_KEY]);
+  }
+}
+
+function generateMalloryKeypairOnce() {
+  if (!fs.existsSync(MALLORY_PRIVATE_KEY)) {
+    console.log('[OpenSSL Service] Generating Mallory\'s keypair...');
+    runOpenSsl(['genrsa', '-out', MALLORY_PRIVATE_KEY, '2048']);
+    runOpenSsl(['rsa', '-in', MALLORY_PRIVATE_KEY, '-pubout', '-out', MALLORY_PUBLIC_KEY]);
+    console.log('[OpenSSL Service] Mallory\'s keypair generated.');
+  }
+}
+
+function generateAliceKeypair() {
+  ensureAliceKeypair();
+  const pemLines = fs.readFileSync(ALICE_PUBLIC_KEY, 'utf8').split('\n');
   const body = pemLines.filter(l => l && !l.startsWith('---')).join('');
   const fingerprint = body.slice(0, 40) + '...';
-
   return { fingerprint };
 }
 
+ensureAliceKeypair();
+generateMalloryKeypairOnce();
+
 function hashFile(filePath) {
   const output = runOpenSsl(['dgst', '-sha256', filePath]);
-  // Output format: SHA2-256(file.txt)= abc123...
   return output.split('=').pop().trim();
 }
 
 function signFile() {
-  runOpenSsl(['dgst', '-sha256', '-sign', PRIVATE_KEY, '-out', SIG_FILE, ORIG_FILE]);
+  runOpenSsl(['dgst', '-sha256', '-sign', ALICE_PRIVATE_KEY, '-out', SIG_FILE, ORIG_FILE]);
 }
 
 function createTamperedFile(customContent) {
@@ -73,13 +96,12 @@ function verifyFile(useTampered) {
       'dgst',
       '-sha256',
       '-verify',
-      PUBLIC_KEY,
+      ALICE_PUBLIC_KEY,
       '-signature',
       SIG_FILE,
       targetFile
     ]);
   } catch (e) {
-    // openssl exits with code 1 on verification failure — execFileSync throws
     openSslResult = e.stdout ? e.stdout.trim() : (e.stderr ? e.stderr.trim() : 'Verification Failure');
   }
 
@@ -97,10 +119,17 @@ function verifyFile(useTampered) {
 }
 
 module.exports = {
-  generateKeypair,
+  runOpenSsl,
+  generateAliceKeypair,
+  generateKeypair: generateAliceKeypair,
+  generateMalloryKeypairOnce,
   hashFile,
   signFile,
   createTamperedFile,
   verifyFile,
+  ALICE_PRIVATE_KEY,
+  ALICE_PUBLIC_KEY,
+  MALLORY_PRIVATE_KEY,
+  MALLORY_PUBLIC_KEY,
   ORIG_FILE,
 };

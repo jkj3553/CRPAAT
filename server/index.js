@@ -13,6 +13,7 @@ app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // API routes
 app.use('/api', require('./routes/api'));
+app.use('/api', require('./routes/cryptanalysis'));
 
 // Catch-all: serve index.html for the single-page app
 app.get('*', (req, res) => {

@@ -128,6 +128,27 @@ body {
   animation: pulseGlow 1.5s infinite;
 }
 
+/* Cryptanalysis Lab nav link */
+.clab-nav-link-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.clab-nav-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  border: 1px solid var(--border-color);
+  padding: 5px 12px;
+  background-color: var(--bg-secondary);
+  transition: color 0.2s, border-color 0.2s;
+}
+.clab-nav-pill:hover {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+
 /* ── Main Content Layout ── */
 .main-content {
   flex: 1;

@@ -19,6 +19,11 @@
   <div class="workspace-container">
     <main class="main-content">
 
+      <div class="clab-nav-link-wrapper">
+        <a href="/cryptanalysis.html" class="clab-nav-pill">
+          → Cryptanalysis Lab
+        </a>
+      </div>
       <!-- KEY STATUS PILL (top-right) -->
       <div class="key-pill-topbar">
         <div class="key-status-pill" id="key-pill">
@@ -41,7 +46,7 @@
           </div>
 
           <button class="btn-primary" id="btn-keygen" onclick="generateKeypair()">
-            <span>⚡</span> Generate RSA-2048 Key Pair
+            Generate RSA-2048 Key Pair
           </button>
 
           <div id="keygen-result" class="keygen-result hidden">
@@ -57,7 +62,7 @@
                 <div class="kic-detail">2048-bit · Server-side only</div>
               </div>
             </div>
-            <p class="init-ready">✓ Environment ready — Upload a document to begin</p>
+            <p class="init-ready">Environment ready — Upload a document to begin</p>
           </div>
         </div>
       </section>
@@ -96,7 +101,7 @@
               <div class="ib-status si-idle" id="alice-doc-state">NO_FILE_LOADED</div>
             </div>
             <div class="icon-box ib--idle" id="alice-sig-box">
-              <div class="ib-icon" id="alice-sig-icon">#️⃣</div>
+              <div class="ib-icon" id="alice-sig-icon">#</div>
               <div class="ib-label">HASH / SIGNATURE</div>
               <div class="ib-status" id="alice-sig-state">UNSIGNED</div>
             </div>
@@ -200,7 +205,6 @@
               <div class="adv-warning-badge">⚠️</div>
               <div class="adv-meta">
                 <div class="adv-name">Adversary: Man-in-the-Middle</div>
-                <div class="adv-status-code" id="tsb-text">INTERCEPT_ACTIVE_PENDING_TRANSMISSION</div>
               </div>
             </div>
             <button class="btn-actor btn-modify" id="btn-modify" onclick="modifyDocument()" disabled>
@@ -228,7 +232,7 @@
 
           <!-- Secure status baseline label -->
           <div class="adversary-secure-label" id="adversary-secure-text">
-            <span>🔒</span> Channel secure – no tampering detected
+            Channel secure – no tampering detected
           </div>
         </div>
       </div>
@@ -300,7 +304,6 @@
       <!-- ── REPORT PANEL ── -->
       <section class="report-panel hidden" id="report-panel">
         <div class="report-header">
-          <span class="report-icon">📋</span>
           <h2>Cryptographic Verification Report</h2>
           <span class="report-badge">OpenSSL · RSA-2048 · SHA-256</span>
         </div>
@@ -349,7 +352,7 @@
           </span>
         </div>
         <div class="footer-right">
-          🛡️ ENCRYPTED_FLOW_ACTIVE
+          ENCRYPTED_FLOW_ACTIVE
         </div>
       </footer>
 
@@ -363,7 +366,7 @@
 <div id="tamper-modal" class="modal-overlay hidden">
   <div class="modal-content glass-card">
     <div class="modal-header">
-      <h3>🕵️ Man-in-the-Middle Interception &amp; Tampering</h3>
+      <h3>Man-in-the-Middle Interception &amp; Tampering</h3>
       <button class="btn-close-modal" onclick="closeTamperModal()">×</button>
     </div>
     <div class="modal-body">

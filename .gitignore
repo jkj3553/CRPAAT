@@ -13,3 +13,4 @@ keys/
 # Python
 __pycache__/
 *.pyc
+.aider*
