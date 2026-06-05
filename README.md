@@ -35,9 +35,26 @@ Unlike generic file-upload applications, this is a live visualization of a **Man
    - Modifies the text payload in a glassmorphic terminal emulator.
    - Relays the altered document to Bob. Note that no network alarm is triggered yet, modeling stealth attacks!
 3. **Bob (Receiver / Verifier)**:
-   - Receives the payload and signature.
+    - Receives the payload and signature.
    - Runs Bob's verification button which triggers the OpenSSL cryptographic verdict.
    - If the adversary tampered with the document, OpenSSL exposes the signature failure, instantly flashing red threat channels across the platform.
+
+---
+
+## The Cryptanalysis Lab
+
+The platform includes a dedicated **Cryptanalysis Lab** interface for in-depth cryptographic learning, divided into two core modules:
+
+### Module 1: Avalanche Effect Analysis (SHA-256)
+Demonstrates the strict diffusion properties of cryptographic hashing.
+* Calculates exact character differences (using Levenshtein edit distance) vs. bit-level hash differences (using Hamming weight).
+* Shows how a single character change in a message radically alters the resulting SHA-256 hash output by over 40-50% of its bits.
+
+### Module 2: Digital Signature Attack Analysis (RSA-2048)
+Tests the boundary conditions and assumptions of digital trust using impersonation scenarios involving a malicious actor, Mallory.
+* **Random Signature Attack**: Shows that an attacker cannot forge a signature simply by submitting random bytes, as they mathematically fail public key decryption verification.
+* **Wrong Key Attack**: Demonstrates that even if Mallory signs a message with her *own* valid private key, the system catches the mismatch when verifying against Alice's public key.
+* **Private Key Compromise**: Visualizes the catastrophic flow where an attacker steals Alice's private key, successfully forging a signature that passes verification, proving that cryptography only secures key ownership, not human identity.
 
 ---
 
@@ -54,13 +71,13 @@ Unlike generic file-upload applications, this is a live visualization of a **Man
 The REST API coordinates the following real-world shell-equivalent commands to perform raw operations:
 
 ### 1. RSA-2048 Key Generation
-Generates a highly secure private RSA key and extracts its public counterpart:
+Generates a highly secure private RSA key and extracts its public counterpart (handled automatically for Alice and the adversary Mallory at startup):
 ```bash
-# Generate the 2048-bit private key
-openssl genrsa -out server/keys/private.pem 2048
+# Generate the 2048-bit private key for Alice
+openssl genrsa -out server/keys/alice_private.pem 2048
 
 # Extract the public key in PEM format
-openssl rsa -in server/keys/private.pem -pubout -out server/keys/public.pem
+openssl rsa -in server/keys/alice_private.pem -pubout -out server/keys/alice_public.pem
 ```
 
 ### 2. SHA-256 Hashing
@@ -72,13 +89,13 @@ openssl dgst -sha256 server/uploads/original.txt
 ### 3. Creating the Digital Signature
 Computes the SHA-256 hash of the uploaded document and signs it with Alice's private key:
 ```bash
-openssl dgst -sha256 -sign server/keys/private.pem -out server/signatures/document.sig server/uploads/original.txt
+openssl dgst -sha256 -sign server/keys/alice_private.pem -out server/signatures/document.sig server/uploads/original.txt
 ```
 
 ### 4. Recipient Cryptographic Verification
 Verifies the signature against the target file (either original or tampered) using Alice's public key:
 ```bash
-openssl dgst -sha256 -verify server/keys/public.pem -signature server/signatures/document.sig server/uploads/original.txt
+openssl dgst -sha256 -verify server/keys/alice_public.pem -signature server/signatures/document.sig server/uploads/original.txt
 ```
 * **Success Output**: `Verified OK`
 * **Failure Output**: `Verification Failure` / non-zero exit code.
