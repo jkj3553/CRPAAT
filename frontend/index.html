@@ -36,17 +36,17 @@
       <section class="init-panel" id="init-panel">
         <div class="init-inner">
           <h2>Initialize Cryptographic Environment</h2>
-          <p>Generate a fresh RSA-2048 key pair using OpenSSL before the demonstration begins. The private key signs documents. The public key verifies them.</p>
+          <p>Generate a fresh RSA key pair using OpenSSL before the demonstration begins. The private key signs documents. The public key verifies them.</p>
           
           <div class="key-spec-row">
-            <span class="key-spec-tag">RSA-2048</span>
+            <span class="key-spec-tag">RSA Keypair</span>
             <span class="key-spec-tag">SHA-256</span>
             <span class="key-spec-tag">PKCS#1 v1.5</span>
             <span class="key-spec-tag">OpenSSL 3.x</span>
           </div>
 
           <button class="btn-primary" id="btn-keygen" onclick="generateKeypair()">
-            Generate RSA-2048 Key Pair
+            Initialize RSA Environment
           </button>
 
           <div id="keygen-result" class="keygen-result hidden">
@@ -59,7 +59,7 @@
               <div class="key-info-card private-card">
                 <div class="kic-label">Private Key</div>
                 <div class="kic-status">Secured</div>
-                <div class="kic-detail">2048-bit · Server-side only</div>
+                <div class="kic-detail">Server-side only</div>
               </div>
             </div>
             <p class="init-ready">Environment ready — Upload a document to begin</p>
@@ -122,6 +122,75 @@
           <button class="btn-actor btn-transmit btn-full" id="btn-transmit" onclick="transmitDocument()" disabled>
             Transmit Document
           </button>
+
+          <!-- Key Metadata Inspector -->
+          <section class="metadata-inspector-panel hidden" id="metadata-inspector-panel">
+            <div class="meta-inspector-header">
+              <span class="meta-inspector-icon">🔑</span>
+              <h3>Key Metadata Inspector</h3>
+              <span class="meta-inspector-badge">ALICE · RSA</span>
+            </div>
+            <p class="meta-inspector-state" id="meta-inspector-state">Waiting for key generation…</p>
+            <div class="meta-inspector-grid">
+              <div class="meta-key-column">
+                <div class="meta-column-title">Public Key</div>
+                <div class="meta-field">
+                  <span class="meta-field-label">Role</span>
+                  <span class="meta-field-value meta-primary" id="meta-pub-role">—</span>
+                </div>
+                <div class="meta-field">
+                  <span class="meta-field-label">Algorithm</span>
+                  <span class="meta-field-value meta-primary" id="meta-pub-algorithm">—</span>
+                </div>
+                <div class="meta-field">
+                  <span class="meta-field-label">Key Size</span>
+                  <span class="meta-field-value meta-primary" id="meta-pub-keysize">—</span>
+                </div>
+                <div class="meta-field meta-secondary">
+                  <span class="meta-field-label">Key Format</span>
+                  <span class="meta-field-value" id="meta-pub-format">—</span>
+                </div>
+                <div class="meta-field meta-secondary">
+                  <span class="meta-field-label">Public Exponent</span>
+                  <span class="meta-field-value" id="meta-pub-exponent">—</span>
+                </div>
+                <p class="meta-field-note" id="meta-pub-context">—</p>
+              </div>
+              <div class="meta-key-column">
+                <div class="meta-column-title">Private Key</div>
+                <div class="meta-field">
+                  <span class="meta-field-label">Role</span>
+                  <span class="meta-field-value meta-primary" id="meta-priv-role">—</span>
+                </div>
+                <div class="meta-field">
+                  <span class="meta-field-label">Algorithm</span>
+                  <span class="meta-field-value meta-primary" id="meta-priv-algorithm">—</span>
+                </div>
+                <div class="meta-field">
+                  <span class="meta-field-label">Key Size</span>
+                  <span class="meta-field-value meta-primary" id="meta-priv-keysize">—</span>
+                </div>
+                <div class="meta-field meta-secondary">
+                  <span class="meta-field-label">Key Format</span>
+                  <span class="meta-field-value" id="meta-priv-format">—</span>
+                </div>
+                <p class="meta-field-note" id="meta-priv-context">—</p>
+                <div class="meta-assumption-block">
+                  <div class="meta-assumption-label">Security Assumption</div>
+                  <p class="meta-assumption-text" id="meta-priv-assumption">—</p>
+                </div>
+                <div class="meta-assumption-block meta-impact-block">
+                  <div class="meta-assumption-label">Impact If Compromised</div>
+                  <p class="meta-assumption-text" id="meta-priv-impact">—</p>
+                </div>
+              </div>
+            </div>
+            <div class="meta-security-banner">
+              <strong>Private key secrecy is critical.</strong>
+              Never export, display, or transmit the private key.
+              Explore the <a href="/cryptanalysis.html">Cryptanalysis Lab</a> to see why compromise breaks the entire trust model.
+            </div>
+          </section>
         </div>
 
         <!-- PIPELINE GAP CONNECTOR -->
@@ -187,6 +256,15 @@
           <!-- Verdict dynamic banner placeholder -->
           <div class="bob-result hidden" id="bob-result">
             <div class="verdict-banner" id="verdict-banner">—</div>
+          </div>
+
+          <!-- Verification Pipeline -->
+          <div class="verification-pipeline hidden" id="verification-pipeline">
+            <div class="vp-header">
+              <span class="vp-title">Verification Pipeline</span>
+              <span class="vp-subtitle">Four-stage trust establishment</span>
+            </div>
+            <div class="vp-stages" id="vp-stages"></div>
           </div>
         </div>
 
@@ -305,7 +383,7 @@
       <section class="report-panel hidden" id="report-panel">
         <div class="report-header">
           <h2>Cryptographic Verification Report</h2>
-          <span class="report-badge">OpenSSL · RSA-2048 · SHA-256</span>
+          <span class="report-badge">OpenSSL · RSA · SHA-256</span>
         </div>
         <div class="report-grid">
           <div class="report-row">

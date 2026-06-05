@@ -88,6 +88,64 @@ function truncateHash(hash, n = 16) {
   return hash.slice(0, n) + '…' + hash.slice(-8);
 }
 
+// ── Key Metadata Inspector ───────────────────────────────────────────────────
+function setMetaText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value ?? '—';
+}
+
+function renderKeyMetadata(data) {
+  const panel = document.getElementById('metadata-inspector-panel');
+  const stateEl = document.getElementById('meta-inspector-state');
+  if (!panel || !stateEl) return;
+
+  panel.classList.remove('hidden');
+
+  const pub = data.publicKey || {};
+  const priv = data.privateKey || {};
+
+  if (pub.status === 'ready' && priv.status === 'ready') {
+    stateEl.textContent = 'Live metadata parsed from OpenSSL — values update dynamically with key size changes.';
+  } else if (pub.status === 'waiting' || priv.status === 'waiting') {
+    stateEl.textContent = 'Waiting for key generation…';
+  } else {
+    stateEl.textContent = 'Key metadata unavailable — regenerate keys or check OpenSSL.';
+  }
+
+  setMetaText('meta-pub-role', pub.role);
+  setMetaText('meta-pub-algorithm', pub.algorithm);
+  setMetaText('meta-pub-keysize', pub.keySize);
+  setMetaText('meta-pub-format', pub.keyFormat);
+  setMetaText('meta-pub-exponent', pub.publicExponent
+    ? `${pub.publicExponent.decimal} (${pub.publicExponent.hex})`
+    : '—');
+  setMetaText('meta-pub-context', pub.securityContext);
+
+  setMetaText('meta-priv-role', priv.role);
+  setMetaText('meta-priv-algorithm', priv.algorithm);
+  setMetaText('meta-priv-keysize', priv.keySize);
+  setMetaText('meta-priv-format', priv.keyFormat);
+  setMetaText('meta-priv-context', priv.securityContext);
+  setMetaText('meta-priv-assumption', priv.securityAssumption);
+  setMetaText('meta-priv-impact', priv.impactIfCompromised);
+}
+
+async function fetchKeyMetadata() {
+  try {
+    const res = await fetch('/api/keys/metadata');
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Server error');
+    renderKeyMetadata(data);
+  } catch {
+    const panel = document.getElementById('metadata-inspector-panel');
+    const stateEl = document.getElementById('meta-inspector-state');
+    if (panel) panel.classList.remove('hidden');
+    if (stateEl) {
+      stateEl.textContent = 'Key metadata unavailable — regenerate keys or check OpenSSL.';
+    }
+  }
+}
+
 
 // ── API 0: Generate Keypair ──────────────────────────────────────────────────
 async function generateKeypair() {
@@ -109,12 +167,13 @@ async function generateKeypair() {
 
     const pill = document.querySelector('.key-status-pill');
     pill.classList.add('ready');
-    document.getElementById('key-pill-text').textContent = 'RSA-2048 · Keys Ready';
+    document.getElementById('key-pill-text').textContent = 'RSA Keypair · Keys Ready';
 
     setBtn('btn-upload', false); // will enable after file select
+    await fetchKeyMetadata();
   } catch (err) {
     btn.disabled = false;
-    btn.innerHTML = 'Generate RSA-2048 Key Pair';
+    btn.innerHTML = 'Generate RSA Key Pair';
     alert('Key generation failed.\n\n' + err.message);
   }
 }
@@ -347,6 +406,48 @@ async function submitTamperPayload() {
   }
 }
 
+// ── Verification Pipeline Render ─────────────────────────────────────────────
+function renderVerificationPipeline(pipeline) {
+  const container = document.getElementById('vp-stages');
+  const panel = document.getElementById('verification-pipeline');
+  if (!container || !panel || !Array.isArray(pipeline)) return;
+
+  container.innerHTML = '';
+
+  pipeline.forEach((stage) => {
+    const isTrust = stage.stage === 'Trust Decision';
+    const pass = stage.status === 'PASS' || stage.status === 'TRUST_ESTABLISHED';
+    const icon = pass ? '✓' : '✗';
+
+    const node = document.createElement('div');
+    node.className = 'vp-stage ' + (isTrust ? (pass ? 'vp-trust' : 'vp-fail') : (pass ? 'vp-pass' : 'vp-fail'));
+
+    node.innerHTML =
+      '<div class="vp-stage-icon">' + icon + '</div>' +
+      '<div class="vp-stage-head">' +
+        '<span class="vp-stage-name">' + stage.stage + '</span>' +
+        '<span class="vp-stage-status">' + stage.status + '</span>' +
+      '</div>' +
+      '<p class="vp-stage-body">' + stage.explanation + '</p>' +
+      '<span class="vp-stage-sig">' + stage.securitySignificance + '</span>';
+
+    container.appendChild(node);
+  });
+
+  panel.classList.remove('hidden');
+}
+
+async function fetchVerificationPipeline(scenario) {
+  const res = await fetch('/api/verify/pipeline', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scenario }),
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || 'Pipeline unavailable');
+  renderVerificationPipeline(data.pipeline);
+}
+
 // ── API 5: Verify ────────────────────────────────────────────────────────────
 async function verifyDocument() {
   const btn = document.getElementById('btn-verify');
@@ -420,6 +521,13 @@ async function verifyDocument() {
     // Build report
     buildReport(data);
 
+    const scenario = session.tampered ? 'mitm_tamper' : 'normal';
+    try {
+      await fetchVerificationPipeline(scenario);
+    } catch {
+      document.getElementById('verification-pipeline')?.classList.add('hidden');
+    }
+
     // Keep the Verify button enabled and accessible for repetitive testing
     btn.disabled = false;
     btn.innerHTML = 'Verify Signature';
@@ -483,13 +591,14 @@ function setBadge(id, isOk, okText, badText) {
 document.addEventListener('DOMContentLoaded', () => {
   ['btn-sign','btn-transmit','btn-modify','btn-verify'].forEach(id => setBtn(id, false));
   setPipeline('idle');
+  fetchKeyMetadata();
   // Guard upload label — requires keys to be generated first
   const uploadLabel = document.getElementById('btn-upload-label');
   if (uploadLabel) {
     uploadLabel.addEventListener('click', e => {
       if (!document.querySelector('.key-status-pill.ready')) {
         e.preventDefault();
-        alert('⚠️ Please generate RSA-2048 keys first.');
+        alert('⚠️ Please generate RSA keys first.');
       }
     });
   }

@@ -89,7 +89,7 @@ function switchModule(moduleName) {
     attContent.classList.remove('hidden');
     avalBtn.classList.remove('active');
     attBtn.classList.add('active');
-    if (subtitle) subtitle.textContent = 'Digital Signature Attack Analysis · RSA-2048';
+    if (subtitle) subtitle.textContent = 'Digital Signature Attack Analysis · RSA';
   }
 }
 
@@ -102,6 +102,50 @@ function handleAttackTypeChange() {
   } else {
     msgBox.value = 'Transfer ₹1000 to Bob';
   }
+}
+
+const PIPELINE_SCENARIO_MAP = {
+  random_signature: 'random_sig',
+  wrong_key: 'wrong_key',
+  private_key_compromise: 'private_key_compromise',
+};
+
+function renderClabPipeline(pipeline) {
+  const container = document.getElementById('clab-vp-stages');
+  const panel = document.getElementById('clab-verification-pipeline');
+  if (!container || !panel || !Array.isArray(pipeline)) return;
+
+  container.innerHTML = '';
+  pipeline.forEach((stage) => {
+    const isTrust = stage.stage === 'Trust Decision';
+    const pass = stage.status === 'PASS' || stage.status === 'TRUST_ESTABLISHED';
+    const icon = pass ? '✓' : '✗';
+    const node = document.createElement('div');
+    node.className = 'vp-stage ' + (isTrust ? (pass ? 'vp-trust' : 'vp-fail') : (pass ? 'vp-pass' : 'vp-fail'));
+    node.innerHTML =
+      '<div class="vp-stage-icon">' + icon + '</div>' +
+      '<div class="vp-stage-head">' +
+        '<span class="vp-stage-name">' + stage.stage + '</span>' +
+        '<span class="vp-stage-status">' + stage.status + '</span>' +
+      '</div>' +
+      '<p class="vp-stage-body">' + stage.explanation + '</p>' +
+      '<span class="vp-stage-sig">' + stage.securitySignificance + '</span>';
+    container.appendChild(node);
+  });
+  panel.classList.remove('hidden');
+}
+
+async function fetchClabPipeline(attackType) {
+  const scenario = PIPELINE_SCENARIO_MAP[attackType];
+  if (!scenario) return;
+  const res = await fetch('/api/verify/pipeline', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scenario }),
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) return;
+  renderClabPipeline(data.pipeline);
 }
 
 // 3. Post attack, parse details, draw flow diagrams, and refresh summary table
@@ -154,7 +198,7 @@ async function executeAttack() {
     // Security Note updates
     const securityNote = document.getElementById('res-attack-security-note');
     if (attackType === 'random_signature') {
-      securityNote.innerHTML = '<strong>Security Analysis:</strong> Verification fails immediately. Without the private key, generating standard 2048-bit signature bytes that decrypt to a valid SHA-256 hash using the public key is mathematically impossible (equivalent to factoring a large semi-prime).';
+      securityNote.innerHTML = '<strong>Security Analysis:</strong> Verification fails immediately. Without the private key, generating standard signature bytes that decrypt to a valid SHA-256 hash using the public key is mathematically impossible (equivalent to factoring a large semi-prime).';
     } else if (attackType === 'wrong_key') {
       securityNote.innerHTML = '<strong>Security Analysis:</strong> The attacker\'s goal was to impersonate Alice by signing the message with Mallory\'s own RSA keypair. Although the generated signature is cryptographically valid, it is valid only for Mallory\'s public key—not Alice\'s. During verification, Bob uses Alice\'s public key, causing the signature check to fail. This demonstrates that digital signatures provide authenticity because a signature must be mathematically linked to the expected identity\'s public key. Possessing a different valid keypair is insufficient to impersonate another user.';
     } else {
@@ -164,6 +208,8 @@ async function executeAttack() {
     // Render results pane
     resultsPlaceholder.classList.add('hidden');
     resultsContent.classList.remove('hidden');
+
+    await fetchClabPipeline(attackType);
     
     // Refresh Dashboard Status
     updateDashboardUI();
